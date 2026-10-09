@@ -1,0 +1,94 @@
+name: CI/CD Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, main ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ master, main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: [self-hosted, Windows]
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Restore Dependencies
+        run: dotnet restore BjjSM.slnx
+
+      - name: Build Solution
+        run: dotnet build BjjSM.slnx --configuration Release --no-restore
+
+      - name: Run Tests
+        run: dotnet test BjjSM.slnx --configuration Release --no-build --verbosity normal
+
+  docker-publish:
+    name: Build & Publish to Docker Hub
+    needs: build-and-test
+    runs-on: [self-hosted, Windows]
+    defaults:
+      run:
+        shell: cmd
+    # Only publish on pushes to master/main or semver release tags (never on unmerged PRs)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER_NAME }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+      - name: Extract Docker metadata (API)
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USER_NAME }}/bjjsm-api
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
+            type=sha,format=short,prefix=sha-
+            type=semver,pattern={{version}}
+
+      - name: Build and Push Docker Image (API)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.api
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+
+      - name: Extract Docker metadata (Web)
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USER_NAME }}/bjjsm-web
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
+            type=sha,format=short,prefix=sha-
+            type=semver,pattern={{version}}
+
+      - name: Build and Push Docker Image (Web)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.client
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
