@@ -1,0 +1,35 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Copy project files for caching restore layer
+COPY src/Shared/BjjSM.SharedKernel/*.csproj src/Shared/BjjSM.SharedKernel/
+COPY src/Modules/Memberships/BjjSM.Modules.Memberships.Domain/*.csproj src/Modules/Memberships/BjjSM.Modules.Memberships.Domain/
+COPY src/Modules/Memberships/BjjSM.Modules.Memberships.Application/*.csproj src/Modules/Memberships/BjjSM.Modules.Memberships.Application/
+COPY src/Modules/Memberships/BjjSM.Modules.Memberships.Infrastructure/*.csproj src/Modules/Memberships/BjjSM.Modules.Memberships.Infrastructure/
+COPY src/Modules/Curriculum/BjjSM.Modules.Curriculum.Domain/*.csproj src/Modules/Curriculum/BjjSM.Modules.Curriculum.Domain/
+COPY src/Modules/Curriculum/BjjSM.Modules.Curriculum.Application/*.csproj src/Modules/Curriculum/BjjSM.Modules.Curriculum.Application/
+COPY src/Modules/Curriculum/BjjSM.Modules.Curriculum.Infrastructure/*.csproj src/Modules/Curriculum/BjjSM.Modules.Curriculum.Infrastructure/
+COPY src/Apps/BjjSM.Api/*.csproj src/Apps/BjjSM.Api/
+
+RUN dotnet restore src/Apps/BjjSM.Api/BjjSM.Api.csproj
+
+# Copy full source and publish
+COPY src/Shared/ src/Shared/
+COPY src/Modules/ src/Modules/
+COPY src/Apps/BjjSM.Api/ src/Apps/BjjSM.Api/
+
+RUN dotnet publish src/Apps/BjjSM.Api/BjjSM.Api.csproj -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+RUN mkdir -p /app/data
+
+COPY --from=build /app/publish .
+
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "BjjSM.Api.dll"]

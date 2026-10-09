@@ -1,0 +1,86 @@
+.bjj-belt-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: inherit;
+}
+
+/* Authentic Belt Strap */
+.bjj-belt-strap {
+    position: relative;
+    width: 80px;
+    height: 18px;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* Standard Sleeve Bar (Black on White/Blue/Purple/Brown) */
+.bjj-belt-sleeve {
+    position: absolute;
+    right: 8px;
+    width: 22px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    padding: 0 1px;
+}
+
+.sleeve-standard {
+    background-color: #050505;
+}
+
+.sleeve-black-belt {
+    background-color: #CC0000;
+    border-left: 2px solid #FFFFFF;
+    border-right: 2px solid #FFFFFF;
+}
+
+.sleeve-coral-belt {
+    background-color: #FFFFFF;
+}
+
+/* Stripes / Degrees */
+.bjj-stripe {
+    display: inline-block;
+    width: 2.5px;
+    height: 75%;
+    background-color: #FFFFFF;
+    border-radius: 0.5px;
+}
+
+/* Adult Belt Strap Colors */
+.belt-adult-white { background-color: #FFFFFF; }
+.belt-adult-blue { background-color: #20409A; }
+.belt-adult-purple { background-color: #6A1B9A; }
+.belt-adult-brown { background-color: #4E342E; }
+.belt-adult-black { background-color: #050505; }
+.belt-adult-coral {
+    background: repeating-linear-gradient(
+        90deg,
+        #CC0000,
+        #CC0000 8px,
+        #050505 8px,
+        #050505 16px
+    );
+}
+.belt-adult-red { background-color: #CC0000; }
+
+/* Kids Belt Colors */
+.belt-kids-white { background-color: #FFFFFF; }
+.belt-kids-grey { background-color: #757575; }
+.belt-kids-yellow { background-color: #FFEE00; }
+.belt-kids-orange { background-color: #FF6D00; }
+.belt-kids-green { background-color: #2E7D32; }
+
+/* Label */
+.bjj-belt-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--brand-black, #050505);
+}

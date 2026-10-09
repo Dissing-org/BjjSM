@@ -1,0 +1,177 @@
+@inject IMemberApiClient MemberApi
+
+@if (IsOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: var(--brand-blue); border-bottom: 2px solid var(--brand-yellow);">
+                    <h5 class="modal-title fw-bold">🥋 Register New Practitioner</h5>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-white">
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger py-2 small" role="alert">
+                            @_errorMessage
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">First Name</label>
+                        <input type="text" class="form-control" @bind="_firstName" placeholder="e.g. Renzo" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Last Name</label>
+                        <input type="text" class="form-control" @bind="_lastName" placeholder="e.g. Gracie" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Email Address</label>
+                        <input type="email" class="form-control" @bind="_email" placeholder="e.g. renzo@academy.com" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Role</label>
+                        <select class="form-select" @bind="_role">
+                            <option value="@PractitionerRole.Student">Student</option>
+                            <option value="@PractitionerRole.Instructor">Instructor</option>
+                            <option value="@(PractitionerRole.Student | PractitionerRole.Instructor)">Instructor & Student</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold text-dark small">Belt Ladder</label>
+                            <select class="form-select" @bind="_ladder" @bind:after="OnLadderChanged">
+                                <option value="@BeltLadder.Adult">Adult Ladder</option>
+                                <option value="@BeltLadder.Kids">Kids Ladder</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold text-dark small">Belt Rank</label>
+                            @if (_ladder == BeltLadder.Adult)
+                            {
+                                <select class="form-select" @bind="_adultBelt">
+                                    @foreach (var belt in Enum.GetValues<AdultBelt>())
+                                    {
+                                        <option value="@belt">@belt Belt</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <select class="form-select" @bind="_kidsBelt">
+                                    @foreach (var belt in Enum.GetValues<KidsBelt>())
+                                    {
+                                        <option value="@belt">@belt Belt</option>
+                                    }
+                                </select>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Stripes / Degrees: @_stripes</label>
+                        <input type="range" class="form-range" min="0" max="4" step="1" @bind="_stripes" />
+                        <div class="d-flex justify-content-between text-muted small px-1">
+                            <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="Close">Cancel</button>
+                    <button type="button" class="btn btn-brand-primary" disabled="@_isSaving" @onclick="SaveAsync">
+                        @if (_isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            <span>Registering...</span>
+                        }
+                        else
+                        {
+                            <span>Register Member</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback<MemberDto> OnMemberCreated { get; set; }
+
+    private string _firstName = "";
+    private string _lastName = "";
+    private string _email = "";
+    private PractitionerRole _role = PractitionerRole.Student;
+    private BeltLadder _ladder = BeltLadder.Adult;
+    private AdultBelt _adultBelt = AdultBelt.White;
+    private KidsBelt _kidsBelt = KidsBelt.White;
+    private int _stripes = 0;
+    private string? _errorMessage;
+    private bool _isSaving;
+
+    private void OnLadderChanged()
+    {
+        _adultBelt = AdultBelt.White;
+        _kidsBelt = KidsBelt.White;
+        _stripes = 0;
+    }
+
+    private async Task Close()
+    {
+        _errorMessage = null;
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task SaveAsync()
+    {
+        _errorMessage = null;
+        if (string.IsNullOrWhiteSpace(_firstName) || string.IsNullOrWhiteSpace(_lastName) || string.IsNullOrWhiteSpace(_email))
+        {
+            _errorMessage = "First name, last name, and email are required.";
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            var req = new CreateMemberRequest(
+                AcademyId: Guid.NewGuid(),
+                FirstName: _firstName.Trim(),
+                LastName: _lastName.Trim(),
+                Email: _email.Trim(),
+                Roles: _role,
+                Ladder: _ladder,
+                AdultBelt: _ladder == BeltLadder.Adult ? _adultBelt : null,
+                KidsBelt: _ladder == BeltLadder.Kids ? _kidsBelt : null,
+                Stripes: _stripes
+            );
+
+            var result = await MemberApi.CreateMemberAsync(req);
+            if (result.IsFailure)
+            {
+                _errorMessage = result.Error;
+                return;
+            }
+
+            // Reset form
+            _firstName = "";
+            _lastName = "";
+            _email = "";
+            _stripes = 0;
+
+            await OnMemberCreated.InvokeAsync(result.Value);
+            await Close();
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

@@ -1,0 +1,36 @@
+services:
+  bjjsm-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: bjjsm-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__MembershipsDb=Data Source=/app/data/memberships.db
+      - ConnectionStrings__CurriculumDb=Data Source=/app/data/curriculum.db
+    volumes:
+      - bjjsm_data:/app/data
+    networks:
+      - bjjsm_net
+
+  bjjsm-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: bjjsm-web
+    restart: unless-stopped
+    depends_on:
+      - bjjsm-api
+    ports:
+      - "8081:80"
+    networks:
+      - bjjsm_net
+
+volumes:
+  bjjsm_data:
+    name: bjjsm_data
+
+networks:
+  bjjsm_net:
+    name: bjjsm_net

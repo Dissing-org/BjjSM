@@ -1,0 +1,41 @@
+@using BjjSM.Modules.Memberships.Domain
+
+<div class="timeline-container">
+    <div class="timeline-header">
+        <h3 class="timeline-title">Graduation History</h3>
+        <span class="timeline-badge">@Graduations.Count Promotions</span>
+    </div>
+
+    @if (!Graduations.Any())
+    {
+        <div class="timeline-empty">
+            <p>No belt or stripe promotions recorded yet. Initial rank remains active.</p>
+        </div>
+    }
+    else
+    {
+        <div class="timeline-track">
+            @foreach (var graduation in Graduations.OrderByDescending(g => g.AwardedAt))
+            {
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-row">
+                            <BjjBeltBadge Rank="@graduation.Rank" />
+                            <span class="timeline-date">@graduation.AwardedAt.ToString("MMM dd, yyyy")</span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(graduation.Notes))
+                        {
+                            <p class="timeline-notes">@graduation.Notes</p>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyCollection<GraduationDto> Graduations { get; set; } = [];
+}

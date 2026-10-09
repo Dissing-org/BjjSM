@@ -1,0 +1,42 @@
+<div class="top-row ps-3 navbar navbar-dark academy-header">
+    <div class="container-fluid d-flex align-items-center">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="">
+            <span class="brand-mon-crest">🥋</span>
+            <span class="brand-title">BJJ STUDIO</span>
+        </a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="nav flex-column py-2">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="nav-icon">⛩️</span> Dashboard
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="members">
+                <span class="nav-icon">👥</span> Member Roster
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="curriculum">
+                <span class="nav-icon">📅</span> Curriculum Planner
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

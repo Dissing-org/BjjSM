@@ -1,0 +1,144 @@
+@inject ICurriculumApiClient CurriculumApi
+
+@if (IsOpen && Technique is not null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: var(--brand-blue); border-bottom: 2px solid var(--brand-yellow);">
+                    <h5 class="modal-title fw-bold">✏️ Edit Drill / Technique</h5>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-white">
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger py-2 small" role="alert">
+                            @_errorMessage
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Technique / Drill Title</label>
+                        <input type="text" class="form-control" @bind="_title" placeholder="e.g. Scissor Sweep to Mount" />
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold text-dark small">Category</label>
+                            <select class="form-select" @bind="_category">
+                                <option value="@TechniqueCategory.Technique">🥋 Technique</option>
+                                <option value="@TechniqueCategory.SituationalDrill">⚡ Situational Drill</option>
+                                <option value="@TechniqueCategory.Warmup">🔥 Warmup</option>
+                                <option value="@TechniqueCategory.CoolDown">🧘 CoolDown</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold text-dark small">Sort Order</label>
+                            <input type="number" class="form-control" @bind="_sortOrder" min="1" max="20" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Reference Video URL (Optional)</label>
+                        <input type="url" class="form-control" @bind="_referenceUrl" placeholder="https://youtube.com/watch?v=..." />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Coaching Notes / Invariants</label>
+                        <textarea class="form-control" rows="3" @bind="_coachingNotes" placeholder="e.g. Ensure sleeve grip is pinned to hip, chop low leg swiftly..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="Close">Cancel</button>
+                    <button type="button" class="btn btn-brand-primary" disabled="@_isSaving" @onclick="SaveAsync">
+                        @if (_isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span>Save Changes</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public Guid PlanId { get; set; }
+    [Parameter] public int WeekNumber { get; set; }
+    [Parameter] public TechniqueDrillDto? Technique { get; set; }
+    [Parameter] public EventCallback<MonthlyPlanDto> OnTechniqueUpdated { get; set; }
+
+    private string _title = "";
+    private TechniqueCategory _category = TechniqueCategory.Technique;
+    private string? _coachingNotes;
+    private string? _referenceUrl;
+    private int _sortOrder = 1;
+    private string? _errorMessage;
+    private bool _isSaving;
+
+    protected override void OnParametersSet()
+    {
+        if (Technique is not null)
+        {
+            _title = Technique.Title;
+            _category = Technique.Category;
+            _coachingNotes = Technique.CoachingNotes;
+            _referenceUrl = Technique.ReferenceUrl;
+            _sortOrder = Technique.SortOrder;
+            _errorMessage = null;
+        }
+    }
+
+    private async Task Close()
+    {
+        _errorMessage = null;
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (Technique is null) return;
+
+        if (string.IsNullOrWhiteSpace(_title))
+        {
+            _errorMessage = "Technique title is required.";
+            return;
+        }
+
+        _errorMessage = null;
+        _isSaving = true;
+
+        try
+        {
+            var req = new UpdateTechniqueRequest(
+                Title: _title.Trim(),
+                Category: _category,
+                CoachingNotes: string.IsNullOrWhiteSpace(_coachingNotes) ? null : _coachingNotes.Trim(),
+                ReferenceUrl: string.IsNullOrWhiteSpace(_referenceUrl) ? null : _referenceUrl.Trim(),
+                SortOrder: _sortOrder
+            );
+
+            var result = await CurriculumApi.UpdateTechniqueAsync(PlanId, WeekNumber, Technique.Id, req);
+            if (result.IsFailure)
+            {
+                _errorMessage = result.Error;
+                return;
+            }
+
+            await OnTechniqueUpdated.InvokeAsync(result.Value);
+            await Close();
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

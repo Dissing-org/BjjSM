@@ -1,0 +1,59 @@
+## Build and output directories
+**/bin/
+**/obj/
+/bin/
+/obj/
+/dist/
+/publish/
+!**/wwwroot/lib/**
+
+## SQLite database files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+## IDE & editor files
+.vs/
+.idea/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+
+## .NET build artifacts
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa]rm/
+[Aa]rm64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+## Frontend & Node
+node_modules/
+npm-debug.log*
+
+## OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+## Local environment
+.env
+.env.local
+docker-compose.override.yml

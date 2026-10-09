@@ -1,0 +1,171 @@
+@inject IMemberApiClient MemberApi
+
+@if (IsOpen && Member is not null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: var(--brand-blue); border-bottom: 2px solid var(--brand-yellow);">
+                    <h5 class="modal-title fw-bold">🎓 Award Belt / Stripe Promotion</h5>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-white">
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger py-2 small" role="alert">
+                            @_errorMessage
+                        </div>
+                    }
+
+                    <div class="p-3 mb-3 rounded" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                        <div class="fw-bold text-dark">Promoting: @Member.FirstName @Member.LastName</div>
+                        <div class="small text-muted mt-1">
+                            Current Rank: <span class="fw-semibold text-dark">@Member.CurrentRank.BeltName @(Member.CurrentRank.Stripes > 0 ? $"({Member.CurrentRank.Stripes} Stripes)" : "")</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold text-dark small">New Belt Ladder</label>
+                            <select class="form-select" @bind="_ladder" @bind:after="OnLadderChanged">
+                                <option value="@BeltLadder.Adult">Adult Ladder</option>
+                                <option value="@BeltLadder.Kids">Kids Ladder</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold text-dark small">New Belt Rank</label>
+                            @if (_ladder == BeltLadder.Adult)
+                            {
+                                <select class="form-select" @bind="_adultBelt">
+                                    @foreach (var belt in Enum.GetValues<AdultBelt>())
+                                    {
+                                        <option value="@belt">@belt Belt</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <select class="form-select" @bind="_kidsBelt">
+                                    @foreach (var belt in Enum.GetValues<KidsBelt>())
+                                    {
+                                        <option value="@belt">@belt Belt</option>
+                                    }
+                                </select>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Stripes / Degrees: @_stripes</label>
+                        <input type="range" class="form-range" min="0" max="4" step="1" @bind="_stripes" />
+                        <div class="d-flex justify-content-between text-muted small px-1">
+                            <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Promotion Date</label>
+                        <input type="date" class="form-control" @bind="_awardedAt" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Instructor Notes / Iron-Man Gauntlet Notes</label>
+                        <textarea class="form-control" rows="2" @bind="_notes" placeholder="e.g. Mastered open guard retention, passed ironman promotion round"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="Close">Cancel</button>
+                    <button type="button" class="btn btn-brand-primary" disabled="@_isSaving" @onclick="PromoteAsync">
+                        @if (_isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span>Award Promotion</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public MemberDto? Member { get; set; }
+    [Parameter] public EventCallback<MemberDto> OnMemberPromoted { get; set; }
+
+    private BeltLadder _ladder = BeltLadder.Adult;
+    private AdultBelt _adultBelt = AdultBelt.White;
+    private KidsBelt _kidsBelt = KidsBelt.White;
+    private int _stripes = 0;
+    private DateTime _awardedAt = DateTime.UtcNow;
+    private string? _notes;
+    private string? _errorMessage;
+    private bool _isSaving;
+
+    protected override void OnParametersSet()
+    {
+        if (Member is not null)
+        {
+            _ladder = Member.CurrentRank.Ladder;
+            if (_ladder == BeltLadder.Adult && Member.CurrentRank.Belt.HasValue)
+                _adultBelt = Member.CurrentRank.Belt.Value;
+            else if (_ladder == BeltLadder.Kids && Member.CurrentRank.KidsBelt.HasValue)
+                _kidsBelt = Member.CurrentRank.KidsBelt.Value;
+
+            _stripes = Member.CurrentRank.Stripes;
+        }
+    }
+
+    private void OnLadderChanged()
+    {
+        _adultBelt = AdultBelt.White;
+        _kidsBelt = KidsBelt.White;
+        _stripes = 0;
+    }
+
+    private async Task Close()
+    {
+        _errorMessage = null;
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task PromoteAsync()
+    {
+        if (Member is null) return;
+        _errorMessage = null;
+        _isSaving = true;
+
+        try
+        {
+            var req = new PromoteMemberRequest(
+                Ladder: _ladder,
+                AdultBelt: _ladder == BeltLadder.Adult ? _adultBelt : null,
+                KidsBelt: _ladder == BeltLadder.Kids ? _kidsBelt : null,
+                Stripes: _stripes,
+                AwardedAt: _awardedAt,
+                AwardedBy: Guid.NewGuid(), // Head instructor
+                Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()
+            );
+
+            var result = await MemberApi.PromoteMemberAsync(Member.Id, req);
+            if (result.IsFailure)
+            {
+                _errorMessage = result.Error;
+                return;
+            }
+
+            await OnMemberPromoted.InvokeAsync(result.Value);
+            await Close();
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

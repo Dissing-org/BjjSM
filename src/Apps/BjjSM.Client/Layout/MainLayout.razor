@@ -1,0 +1,18 @@
+@inherits LayoutComponentBase
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4 text-muted small">
+            <span class="fw-semibold" style="color: var(--brand-blue);">🥋 BjjSM Martial Arts Portal</span>
+        </div>
+
+        <article class="content px-4">
+            <AppErrorBoundary>
+                @Body
+            </AppErrorBoundary>
+        </article>
+    </main>
+</div>

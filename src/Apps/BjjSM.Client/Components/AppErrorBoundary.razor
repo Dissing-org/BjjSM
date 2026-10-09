@@ -1,0 +1,38 @@
+@inherits ErrorBoundary
+
+@if (CurrentException is null)
+{
+    @ChildContent
+}
+else
+{
+    <div class="card border-0 shadow-sm p-4 bg-white my-4 mx-auto" style="max-width: 720px; border-left: 6px solid #20409A !important; border-top: 3px solid #FFEE00 !important; border-radius: 8px;">
+        <div class="d-flex align-items-start gap-3">
+            <div style="font-size: 2.2rem; line-height: 1;">🥋</div>
+            <div class="flex-grow-1">
+                <h4 class="fw-bold text-dark m-0">Technique Interrupted</h4>
+                <p class="text-muted mt-1 mb-3">
+                    An unexpected application error occurred while loading this view. Your session and stored data remain intact.
+                </p>
+
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-brand-primary btn-sm px-3 fw-semibold" @onclick="Recover">
+                        🔄 Reset Component
+                    </button>
+                    <a href="" class="btn btn-outline-secondary btn-sm px-3">
+                        ⛩️ Return to Dashboard
+                    </a>
+                </div>
+
+                <details class="bg-light p-2 rounded border small">
+                    <summary class="fw-semibold text-secondary" style="cursor: pointer;">
+                        Technical Diagnostics
+                    </summary>
+                    <pre class="m-0 mt-2 text-danger small" style="white-space: pre-wrap; word-break: break-all;">@CurrentException.Message
+
+@CurrentException.StackTrace</pre>
+                </details>
+            </div>
+        </div>
+    </div>
+}

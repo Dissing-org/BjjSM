@@ -1,0 +1,758 @@
+@page "/curriculum"
+@inject ICurriculumApiClient CurriculumApi
+@inject IJSRuntime JS
+
+<PageTitle>BjjSM - Academy Curriculum</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h2 fw-bold text-dark m-0">📅 Academy Curriculum Planner</h1>
+        <p class="text-muted m-0">Unified monthly theme with weekly sub-themes and drills &bull; All belt ranks train together</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+        @if (_currentPlan is not null)
+        {
+            <button class="btn btn-brand-accent fw-bold d-flex align-items-center gap-2" 
+                    disabled="@_isDownloadingPdf" 
+                    @onclick="DownloadPdfAsync">
+                @if (_isDownloadingPdf)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                    <span>Generating PDF...</span>
+                }
+                else
+                {
+                    <span>📄</span>
+                    <span>Download PDF Syllabus</span>
+                }
+            </button>
+            <button class="btn btn-outline-danger btn-sm fw-semibold d-flex align-items-center gap-1"
+                    @onclick="ConfirmDeletePlan">
+                <span>🗑️</span>
+                <span>Reset Plan</span>
+            </button>
+        }
+    </div>
+</div>
+
+<!-- Date & Team Toolbar -->
+<div class="card border-0 shadow-sm mb-4 bg-white" style="border-radius: 8px;">
+    <div class="card-body p-3">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <label class="form-label text-muted small fw-bold mb-1">Team & Cohort</label>
+                <div class="p-2 border rounded bg-light d-flex align-items-center gap-2">
+                    <span class="badge" style="background-color: var(--brand-blue); color: var(--brand-yellow); font-weight: 800;">🥋 1 TEAM</span>
+                    <span class="fw-bold text-dark small">Academy Unified Curriculum (All Belts & Ranks)</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small fw-bold mb-1">Month</label>
+                <select class="form-select" @bind="_selectedMonth" @bind:after="LoadPlanAsync">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        <option value="@m">@System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted small fw-bold mb-1">Year</label>
+                <select class="form-select" @bind="_selectedYear" @bind:after="LoadPlanAsync">
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+            <div class="col-md-2 text-md-end pt-md-3">
+                @if (_currentPlan is not null)
+                {
+                    <span class="badge @(_currentPlan.Status == PlanStatus.Published ? "bg-success" : "bg-warning text-dark") px-3 py-2 fw-bold">
+                        @_currentPlan.Status.ToString().ToUpper()
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Planning Canvas -->
+@if (_isLoading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status" style="color: var(--brand-blue) !important;">
+            <span class="visually-hidden">Loading curriculum...</span>
+        </div>
+        <p class="text-muted mt-2">Loading monthly syllabus...</p>
+    </div>
+}
+else if (_currentPlan is null)
+{
+    <!-- Empty State: Initialize New Plan -->
+    <div class="card border-0 shadow-sm text-center py-5 bg-white">
+        <div class="card-body max-w-600 mx-auto" style="max-width: 600px;">
+            <div style="font-size: 3.5rem;">🥋</div>
+            <h3 class="fw-bold mt-2">No Curriculum Plan for @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(_selectedMonth) @_selectedYear</h3>
+            <p class="text-muted mb-4">
+                Initialize this month's unified academy syllabus. All belt ranks will follow this monthly theme with weekly sub-themes and technique progressions.
+            </p>
+
+            <div class="text-start mb-3">
+                <label class="form-label fw-bold text-dark small">Monthly Core Objective / Theme</label>
+                <input type="text" class="form-control" @bind="_newObjective" placeholder="e.g. Mount Control & Armbar Combinations" />
+            </div>
+
+            <div class="text-start mb-4">
+                <label class="form-label fw-bold text-dark small">Plan Duration</label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="weekCountRadio" id="week4" value="4" 
+                               checked="@(_newWeekCount == 4)" 
+                               @onchange="@(() => _newWeekCount = 4)" />
+                        <label class="form-check-label fw-semibold" for="week4">
+                            4 Weeks (Standard)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="weekCountRadio" id="week5" value="5" 
+                               checked="@(_newWeekCount == 5)" 
+                               @onchange="@(() => _newWeekCount = 5)" />
+                        <label class="form-check-label fw-semibold" for="week5">
+                            5 Weeks (Extended Calendar Month)
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_createError))
+            {
+                <div class="alert alert-danger py-2 small text-start">@_createError</div>
+            }
+
+            <button class="btn btn-brand-primary w-100 fw-bold py-2" disabled="@_isCreating" @onclick="CreatePlanAsync">
+                @if (_isCreating)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    <span>Creating Plan...</span>
+                }
+                else
+                {
+                    <span>+ Initialize @_newWeekCount-Week Curriculum</span>
+                }
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Monthly Focus Objective Banner -->
+    <div class="card border-0 shadow-sm mb-4 text-white" style="background-color: #0B0F19; border-left: 6px solid #FFEE00 !important; border-radius: 8px;">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="flex-grow-1">
+                    <div class="text-uppercase small fw-bold" style="color: #FFEE00; letter-spacing: 0.05em;">Monthly Focus Objective</div>
+                    @if (_isEditingObjective)
+                    {
+                        <div class="d-flex gap-2 align-items-center mt-2 flex-wrap">
+                            <input type="text" class="form-control form-control-sm text-dark bg-white fw-bold flex-grow-1" 
+                                   @bind="_editingObjectiveText" 
+                                   placeholder="Enter monthly objective..." />
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-brand-accent fw-bold" disabled="@_isSavingObjective" @onclick="SaveObjectiveAsync">
+                                    @if (_isSavingObjective)
+                                    {
+                                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                                    }
+                                    else
+                                    {
+                                        <span>Save</span>
+                                    }
+                                </button>
+                                <button class="btn btn-sm btn-outline-light" disabled="@_isSavingObjective" @onclick="CancelEditObjective">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_objectiveError))
+                        {
+                            <div class="text-danger small mt-1">@_objectiveError</div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="h5 m-0 mt-1 fw-bold">@_currentPlan.MonthlyObjective</div>
+                    }
+                </div>
+                @if (!_isEditingObjective)
+                {
+                    <button class="btn btn-sm btn-outline-light text-nowrap d-flex align-items-center gap-1" @onclick="StartEditObjective">
+                        <span>✏️</span>
+                        <span>Edit Objective</span>
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board (4 or 5 Weeks) -->
+    <div class="row g-3">
+        @foreach (var week in _currentPlan.Weeks.OrderBy(w => w.WeekNumber))
+        {
+            var colClass = _currentPlan.Weeks.Count == 5 ? "col-lg col-md-6" : "col-lg-3 col-md-6";
+            <div class="@colClass">
+                <div class="card border-0 shadow-sm h-100 d-flex flex-column bg-white kanban-column" style="border-radius: 8px; border-top: 4px solid #20409A !important;">
+                    <!-- Column Header -->
+                    <div class="card-header bg-white border-bottom py-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-light text-dark border fw-bold">Week @week.WeekNumber</span>
+                            <span class="small text-muted">@week.Techniques.Count @(week.Techniques.Count == 1 ? "drill" : "drills")</span>
+                        </div>
+
+                        <!-- Weekly Sub-Theme with Inline Editing -->
+                        @if (_editingWeekNumber == week.WeekNumber)
+                        {
+                            <div class="mt-2">
+                                <input type="text" class="form-control form-control-sm mb-1 fw-semibold" 
+                                       @bind="_editingWeekThemeText" 
+                                       placeholder="e.g. Closed Guard Sweeps" />
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <button class="btn btn-xs btn-outline-secondary py-0 px-2" disabled="@_isSavingWeekTheme" @onclick="CancelEditWeekTheme">
+                                        Cancel
+                                    </button>
+                                    <button class="btn btn-xs btn-brand-primary py-0 px-2 fw-bold" disabled="@_isSavingWeekTheme" @onclick="() => SaveWeekThemeAsync(week.WeekNumber)">
+                                        @if (_isSavingWeekTheme)
+                                        {
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        }
+                                        else
+                                        {
+                                            <span>Save</span>
+                                        }
+                                    </button>
+                                </div>
+                                @if (!string.IsNullOrEmpty(_weekThemeError))
+                                {
+                                    <div class="text-danger small mt-1" style="font-size: 0.75rem;">@_weekThemeError</div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex justify-content-between align-items-start gap-1 mt-1">
+                                <div class="fw-bold text-dark flex-grow-1" style="font-size: 0.95rem;">
+                                    @if (string.IsNullOrWhiteSpace(week.Theme))
+                                    {
+                                        <span class="text-muted fst-italic fw-normal" style="font-size: 0.85rem;">(No weekly theme set)</span>
+                                    }
+                                    else
+                                    {
+                                        @week.Theme
+                                    }
+                                </div>
+                                <button class="btn btn-outline-secondary btn-xs p-1 text-decoration-none" title="Edit Weekly Sub-Theme" @onclick="() => StartEditWeekTheme(week.WeekNumber, week.Theme)">
+                                    ✏️
+                                </button>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Column Body: Techniques List -->
+                    <div class="card-body p-2 flex-grow-1 d-flex flex-column gap-2" style="background-color: #F8FAFC; min-height: 280px;">
+                        @if (!week.Techniques.Any())
+                        {
+                            <div class="text-center text-muted small py-4 my-auto">
+                                <em>No techniques added yet</em>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var tech in week.Techniques.OrderBy(t => t.SortOrder))
+                            {
+                                <div class="card border shadow-xs p-2 bg-white technique-card position-relative">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="badge category-badge-@tech.Category.ToString().ToLower() small">
+                                            @tech.Category
+                                        </span>
+                                        <div class="d-flex align-items-center gap-1">
+                                            @if (!string.IsNullOrWhiteSpace(tech.ReferenceUrl))
+                                            {
+                                                <a href="@tech.ReferenceUrl" target="_blank" rel="noopener noreferrer" class="small text-decoration-none video-link me-1" title="Watch Technique Drill Video">
+                                                    ▶ Video
+                                                </a>
+                                            }
+                                            <button class="btn btn-sm btn-link p-0 text-muted" title="Edit technique" @onclick="() => OpenEditTechnique(week.WeekNumber, tech)">
+                                                ✏️
+                                            </button>
+                                            <button class="btn btn-sm btn-link p-0 text-danger ms-1" title="Delete technique" @onclick="() => ConfirmDeleteTechnique(week.WeekNumber, tech.Id, tech.Title)">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="fw-bold text-dark small">@tech.Title</div>
+                                    @if (!string.IsNullOrWhiteSpace(tech.CoachingNotes))
+                                    {
+                                        <div class="text-muted small mt-1 font-monospace" style="font-size: 0.78rem;">
+                                            @tech.CoachingNotes
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <!-- Column Footer: Add Drill Button -->
+                    <div class="card-footer bg-white border-top p-2">
+                        <button class="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1"
+                                style="color: var(--brand-blue); border-color: var(--brand-blue);"
+                                @onclick="() => OpenAddTechnique(week.WeekNumber)">
+                            <span>+</span> Add Drill / Technique
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Modals -->
+    @if (_selectedWeekForAdd > 0)
+    {
+        <AddTechniqueModal 
+            @bind-IsOpen="_showAddModal" 
+            PlanId="_currentPlan.Id" 
+            WeekNumber="_selectedWeekForAdd" 
+            OnTechniqueAdded="HandleTechniqueAdded" />
+    }
+
+    @if (_showEditModal && _techniqueToEdit is not null)
+    {
+        <EditTechniqueModal 
+            @bind-IsOpen="_showEditModal" 
+            PlanId="_currentPlan.Id" 
+            WeekNumber="_selectedWeekForEdit" 
+            Technique="_techniqueToEdit" 
+            OnTechniqueUpdated="HandleTechniqueUpdated" />
+    }
+
+    @if (_showDeleteTechModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title fw-bold">🗑️ Delete Drill / Technique</h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CancelDeleteTechnique"></button>
+                    </div>
+                    <div class="modal-body p-4 bg-white">
+                        <p class="mb-0">Are you sure you want to remove <strong>@_deleteTechTitle</strong> from Week @_deleteTechWeekNumber?</p>
+                        @if (!string.IsNullOrEmpty(_deleteTechError))
+                        {
+                            <div class="alert alert-danger mt-3 py-2 small">@_deleteTechError</div>
+                        }
+                    </div>
+                    <div class="modal-footer bg-light border-top">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CancelDeleteTechnique">Cancel</button>
+                        <button type="button" class="btn btn-danger fw-bold" disabled="@_isDeletingTech" @onclick="ExecuteDeleteTechniqueAsync">
+                            @if (_isDeletingTech)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                <span>Deleting...</span>
+                            }
+                            else
+                            {
+                                <span>Delete</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (_showDeletePlanModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title fw-bold">⚠️ Reset Monthly Curriculum Plan</h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CancelDeletePlan"></button>
+                    </div>
+                    <div class="modal-body p-4 bg-white">
+                        <p>Are you sure you want to reset and delete the curriculum for <strong>@System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(_selectedMonth) @_selectedYear</strong>?</p>
+                        <p class="text-muted small mb-0">This will remove all weekly themes and scheduled techniques for this month, allowing you to start completely fresh.</p>
+                        @if (!string.IsNullOrEmpty(_deletePlanError))
+                        {
+                            <div class="alert alert-danger mt-3 py-2 small">@_deletePlanError</div>
+                        }
+                    </div>
+                    <div class="modal-footer bg-light border-top">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CancelDeletePlan">Cancel</button>
+                        <button type="button" class="btn btn-danger fw-bold" disabled="@_isDeletingPlan" @onclick="ExecuteDeletePlanAsync">
+                            @if (_isDeletingPlan)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                <span>Resetting...</span>
+                            }
+                            else
+                            {
+                                <span>Yes, Reset Plan</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<style>
+    .technique-card {
+        border-radius: 6px;
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .technique-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+    }
+    .category-badge-technique {
+        background-color: #20409A;
+        color: #FFFFFF;
+    }
+    .category-badge-situationaldrill {
+        background-color: #FFEE00;
+        color: #050505;
+        font-weight: 700;
+    }
+    .category-badge-warmup {
+        background-color: #64748B;
+        color: #FFFFFF;
+    }
+    .category-badge-cooldown {
+        background-color: #0F766E;
+        color: #FFFFFF;
+    }
+    .video-link {
+        color: #20409A;
+        font-weight: 700;
+        font-size: 0.75rem;
+    }
+    .video-link:hover {
+        text-decoration: underline;
+    }
+    .btn-xs {
+        font-size: 0.75rem;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+    }
+</style>
+
+@code {
+    // Canonical academy and unified curriculum program ID
+    private readonly Guid _academyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private readonly Guid _unifiedProgramId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+    private int _selectedMonth = DateTime.UtcNow.Month;
+    private int _selectedYear = DateTime.UtcNow.Year;
+
+    private MonthlyPlanDto? _currentPlan;
+    private bool _isLoading = true;
+    private bool _isCreating;
+    private bool _isDownloadingPdf;
+    private string _newObjective = "Mount Control & Armbar Combinations";
+    private int _newWeekCount = 4;
+    private string? _createError;
+
+    // Objective inline editing
+    private bool _isEditingObjective;
+    private string _editingObjectiveText = "";
+    private bool _isSavingObjective;
+    private string? _objectiveError;
+
+    // Weekly theme inline editing
+    private int? _editingWeekNumber;
+    private string _editingWeekThemeText = "";
+    private bool _isSavingWeekTheme;
+    private string? _weekThemeError;
+
+    // Add technique modal
+    private bool _showAddModal;
+    private int _selectedWeekForAdd;
+
+    // Edit technique modal
+    private bool _showEditModal;
+    private int _selectedWeekForEdit;
+    private TechniqueDrillDto? _techniqueToEdit;
+
+    // Delete technique modal
+    private bool _showDeleteTechModal;
+    private int _deleteTechWeekNumber;
+    private Guid _deleteTechId;
+    private string _deleteTechTitle = "";
+    private bool _isDeletingTech;
+    private string? _deleteTechError;
+
+    // Delete plan modal
+    private bool _showDeletePlanModal;
+    private bool _isDeletingPlan;
+    private string? _deletePlanError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPlanAsync();
+    }
+
+    private async Task LoadPlanAsync()
+    {
+        _isLoading = true;
+        _isEditingObjective = false;
+        _editingWeekNumber = null;
+        try
+        {
+            _currentPlan = await CurriculumApi.GetPlanAsync(_academyId, _unifiedProgramId, _selectedYear, _selectedMonth);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CreatePlanAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newObjective))
+        {
+            _createError = "Please specify a monthly core objective.";
+            return;
+        }
+
+        _createError = null;
+        _isCreating = true;
+        try
+        {
+            var req = new CreateMonthlyPlanRequest(
+                AcademyId: _academyId,
+                ProgramId: _unifiedProgramId,
+                Year: _selectedYear,
+                Month: _selectedMonth,
+                Objective: _newObjective.Trim(),
+                CreatedByInstructorId: Guid.NewGuid(),
+                WeekCount: _newWeekCount
+            );
+
+            var result = await CurriculumApi.CreatePlanAsync(req);
+            if (result.IsFailure)
+            {
+                _createError = result.Error;
+                return;
+            }
+
+            _currentPlan = result.Value;
+        }
+        finally
+        {
+            _isCreating = false;
+        }
+    }
+
+    private void StartEditObjective()
+    {
+        if (_currentPlan is null) return;
+        _editingObjectiveText = _currentPlan.MonthlyObjective;
+        _objectiveError = null;
+        _isEditingObjective = true;
+    }
+
+    private void CancelEditObjective()
+    {
+        _isEditingObjective = false;
+        _objectiveError = null;
+    }
+
+    private async Task SaveObjectiveAsync()
+    {
+        if (_currentPlan is null) return;
+        if (string.IsNullOrWhiteSpace(_editingObjectiveText))
+        {
+            _objectiveError = "Monthly objective cannot be empty.";
+            return;
+        }
+
+        _isSavingObjective = true;
+        _objectiveError = null;
+        try
+        {
+            var result = await CurriculumApi.UpdateObjectiveAsync(_currentPlan.Id, _editingObjectiveText.Trim());
+            if (result.IsFailure)
+            {
+                _objectiveError = result.Error;
+                return;
+            }
+
+            _currentPlan = result.Value;
+            _isEditingObjective = false;
+        }
+        finally
+        {
+            _isSavingObjective = false;
+        }
+    }
+
+    private void StartEditWeekTheme(int weekNumber, string currentTheme)
+    {
+        _editingWeekNumber = weekNumber;
+        _editingWeekThemeText = currentTheme;
+        _weekThemeError = null;
+    }
+
+    private void CancelEditWeekTheme()
+    {
+        _editingWeekNumber = null;
+        _weekThemeError = null;
+    }
+
+    private async Task SaveWeekThemeAsync(int weekNumber)
+    {
+        if (_currentPlan is null) return;
+        if (string.IsNullOrWhiteSpace(_editingWeekThemeText))
+        {
+            _weekThemeError = "Weekly theme cannot be empty.";
+            return;
+        }
+
+        _isSavingWeekTheme = true;
+        _weekThemeError = null;
+        try
+        {
+            var result = await CurriculumApi.UpdateWeekThemeAsync(_currentPlan.Id, weekNumber, _editingWeekThemeText.Trim());
+            if (result.IsFailure)
+            {
+                _weekThemeError = result.Error;
+                return;
+            }
+
+            _currentPlan = result.Value;
+            _editingWeekNumber = null;
+        }
+        finally
+        {
+            _isSavingWeekTheme = false;
+        }
+    }
+
+    private void OpenAddTechnique(int weekNumber)
+    {
+        _selectedWeekForAdd = weekNumber;
+        _showAddModal = true;
+    }
+
+    private void HandleTechniqueAdded(MonthlyPlanDto updatedPlan)
+    {
+        _currentPlan = updatedPlan;
+    }
+
+    private void OpenEditTechnique(int weekNumber, TechniqueDrillDto tech)
+    {
+        _selectedWeekForEdit = weekNumber;
+        _techniqueToEdit = tech;
+        _showEditModal = true;
+    }
+
+    private void HandleTechniqueUpdated(MonthlyPlanDto updatedPlan)
+    {
+        _currentPlan = updatedPlan;
+    }
+
+    private void ConfirmDeleteTechnique(int weekNumber, Guid techniqueId, string title)
+    {
+        _deleteTechWeekNumber = weekNumber;
+        _deleteTechId = techniqueId;
+        _deleteTechTitle = title;
+        _deleteTechError = null;
+        _showDeleteTechModal = true;
+    }
+
+    private void CancelDeleteTechnique()
+    {
+        _showDeleteTechModal = false;
+        _deleteTechError = null;
+    }
+
+    private async Task ExecuteDeleteTechniqueAsync()
+    {
+        if (_currentPlan is null) return;
+        _isDeletingTech = true;
+        _deleteTechError = null;
+
+        try
+        {
+            var result = await CurriculumApi.DeleteTechniqueAsync(_currentPlan.Id, _deleteTechWeekNumber, _deleteTechId);
+            if (result.IsFailure)
+            {
+                _deleteTechError = result.Error;
+                return;
+            }
+
+            _currentPlan = result.Value;
+            _showDeleteTechModal = false;
+        }
+        finally
+        {
+            _isDeletingTech = false;
+        }
+    }
+
+    private void ConfirmDeletePlan()
+    {
+        _deletePlanError = null;
+        _showDeletePlanModal = true;
+    }
+
+    private void CancelDeletePlan()
+    {
+        _showDeletePlanModal = false;
+        _deletePlanError = null;
+    }
+
+    private async Task ExecuteDeletePlanAsync()
+    {
+        if (_currentPlan is null) return;
+        _isDeletingPlan = true;
+        _deletePlanError = null;
+
+        try
+        {
+            var result = await CurriculumApi.DeletePlanAsync(_currentPlan.Id);
+            if (result.IsFailure)
+            {
+                _deletePlanError = result.Error;
+                return;
+            }
+
+            _showDeletePlanModal = false;
+            _currentPlan = null;
+        }
+        finally
+        {
+            _isDeletingPlan = false;
+        }
+    }
+
+    private async Task DownloadPdfAsync()
+    {
+        if (_currentPlan is null) return;
+        _isDownloadingPdf = true;
+
+        try
+        {
+            var pdfBytes = await CurriculumApi.DownloadPlanPdfAsync(_currentPlan.Id);
+            if (pdfBytes is not null && pdfBytes.Length > 0)
+            {
+                var base64 = Convert.ToBase64String(pdfBytes);
+                var fileName = $"Syllabus_{_currentPlan.Year}_{_currentPlan.Month:D2}.pdf";
+                await JS.InvokeVoidAsync("downloadFileFromBase64", fileName, base64, "application/pdf");
+            }
+        }
+        finally
+        {
+            _isDownloadingPdf = false;
+        }
+    }
+}

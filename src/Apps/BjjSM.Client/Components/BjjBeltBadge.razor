@@ -1,0 +1,70 @@
+@using BjjSM.Modules.Memberships.Domain
+
+<div class="bjj-belt-wrapper" title="@GetTooltip()">
+    <div class="bjj-belt-strap @GetBeltColorClass()">
+        <div class="bjj-belt-sleeve @GetSleeveClass()">
+            @for (int i = 0; i < Rank.Stripes; i++)
+            {
+                <span class="bjj-stripe"></span>
+            }
+        </div>
+    </div>
+    @if (ShowLabel)
+    {
+        <span class="bjj-belt-label">@GetDisplayLabel()</span>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public RankDto Rank { get; set; } = default!;
+
+    [Parameter]
+    public bool ShowLabel { get; set; } = true;
+
+    private string GetBeltColorClass()
+    {
+        if (Rank.Ladder == BeltLadder.Adult && Rank.Belt.HasValue)
+        {
+            return $"belt-adult-{Rank.Belt.Value.ToString().ToLowerInvariant()}";
+        }
+
+        if (Rank.Ladder == BeltLadder.Kids && Rank.KidsBelt.HasValue)
+        {
+            return $"belt-kids-{Rank.KidsBelt.Value.ToString().ToLowerInvariant()}";
+        }
+
+        return "belt-adult-white";
+    }
+
+    private string GetSleeveClass()
+    {
+        // Adult Black belts have red rank bars; Coral/Red belts have white bars; all others have black bars
+        if (Rank.Belt == AdultBelt.Black)
+            return "sleeve-black-belt";
+
+        if (Rank.Belt == AdultBelt.Coral || Rank.Belt == AdultBelt.Red)
+            return "sleeve-coral-belt";
+
+        return "sleeve-standard";
+    }
+
+    private string GetDisplayLabel()
+    {
+        var stripesSuffix = Rank.Stripes switch
+        {
+            0 => "",
+            1 => " (1 Stripe)",
+            _ => $" ({Rank.Stripes} Stripes)"
+        };
+
+        if (Rank.Belt == AdultBelt.Black && Rank.Stripes > 0)
+        {
+            stripesSuffix = $" ({Rank.Stripes}th Degree)";
+        }
+
+        return $"{Rank.BeltName} Belt{stripesSuffix}";
+    }
+
+    private string GetTooltip() => $"{Rank.Ladder} Division - {GetDisplayLabel()}";
+}

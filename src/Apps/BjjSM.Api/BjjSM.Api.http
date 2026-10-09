@@ -1,0 +1,6 @@
+@BjjSM.Api_HostAddress = http://localhost:5093
+
+GET {{BjjSM.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

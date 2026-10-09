@@ -1,0 +1,94 @@
+@page "/"
+@using BjjSM.Modules.Memberships.Domain
+@using BjjSM.Client.Components
+
+<PageTitle>BjjSM - Member Dashboard</PageTitle>
+
+<div class="dashboard-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-dark m-0">Student & Curriculum Portal</h1>
+            <p class="text-muted m-0">Brazilian Jiu-Jitsu Academy Management System</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-brand-primary" @onclick="PromoteSample">
+                + Award Promotion
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Student Profile Card -->
+    <div class="col-md-5">
+        <div class="card border shadow-sm p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="avatar-circle">
+                    @_sampleStudent.FirstName[0]@_sampleStudent.LastName[0]
+                </div>
+                <div>
+                    <h4 class="m-0 fw-bold">@_sampleStudent.FirstName @_sampleStudent.LastName</h4>
+                    <span class="badge bg-light text-dark border">@_sampleStudent.Roles</span>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Current Active Rank</label>
+                <BjjBeltBadge Rank="@_sampleStudent.CurrentRank" />
+            </div>
+
+            <div class="border-top pt-3">
+                <div class="d-flex justify-content-between text-muted small mb-1">
+                    <span>Email:</span>
+                    <span class="text-dark fw-medium">@_sampleStudent.Email</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted small">
+                    <span>Academy:</span>
+                    <span class="text-dark fw-medium">HQ Gracie Barra / Alliance</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graduation Timeline -->
+    <div class="col-md-7">
+        <GraduationTimeline Graduations="@_sampleStudent.Graduations.Select(g => new GraduationDto(g.Id, (RankDto)g.Rank, g.AwardedAt, g.AwardedBy, g.Notes)).ToList()" />
+    </div>
+</div>
+
+@code {
+    private Practitioner _sampleStudent = default!;
+    private readonly Guid _coachId = Guid.NewGuid();
+
+    protected override void OnInitialized()
+    {
+        var initialWhite = Rank.CreateAdult(AdultBelt.White, 0).Value;
+        _sampleStudent = Practitioner.Create(
+            Guid.NewGuid(),
+            "Lucas",
+            "Leite",
+            "lucas.leite@bjj.academy",
+            PractitionerRole.Student,
+            initialWhite).Value;
+
+        // Populate realistic promotion milestones
+        var t1 = DateTime.UtcNow.AddMonths(-18);
+        var t2 = DateTime.UtcNow.AddMonths(-12);
+        var t3 = DateTime.UtcNow.AddMonths(-6);
+
+        _sampleStudent.Promote(Rank.CreateAdult(AdultBelt.White, 2).Value, t1, _coachId, "Consistent attendance & half-guard mastery.");
+        _sampleStudent.Promote(Rank.CreateAdult(AdultBelt.White, 4).Value, t2, _coachId, "Gold medal in local Gi tournament.");
+        _sampleStudent.Promote(Rank.CreateAdult(AdultBelt.Blue, 0).Value, t3, _coachId, "Promoted to Blue Belt at summer grading ceremony.");
+    }
+
+    private void PromoteSample()
+    {
+        // Advance stripes or next belt for interactive demonstration
+        var current = _sampleStudent.CurrentRank;
+        if (current.Belt == AdultBelt.Blue && current.Stripes < 4)
+        {
+            var nextRank = Rank.CreateAdult(AdultBelt.Blue, current.Stripes + 1).Value;
+            _sampleStudent.Promote(nextRank, DateTime.UtcNow, _coachId, "Awarded stripe during weekly class review.");
+        }
+    }
+}

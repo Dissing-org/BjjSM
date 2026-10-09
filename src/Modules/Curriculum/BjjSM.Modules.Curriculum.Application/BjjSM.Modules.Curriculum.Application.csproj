@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\BjjSM.Modules.Curriculum.Domain\BjjSM.Modules.Curriculum.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\BjjSM.SharedKernel\BjjSM.SharedKernel.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

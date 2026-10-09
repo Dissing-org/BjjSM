@@ -1,0 +1,135 @@
+@page "/members/{Id:guid}"
+@inject IMemberApiClient MemberApi
+@inject NavigationManager Nav
+
+<PageTitle>BjjSM - Member Profile</PageTitle>
+
+<div class="mb-3">
+    <a href="members" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+        <span>←</span> Back to Practitioner Roster
+    </a>
+</div>
+
+@if (_isLoading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status" style="color: var(--brand-blue) !important;">
+            <span class="visually-hidden">Loading practitioner details...</span>
+        </div>
+        <p class="text-muted mt-2">Loading member record...</p>
+    </div>
+}
+else if (_member is null)
+{
+    <div class="card border-0 shadow-sm text-center py-5 bg-white">
+        <div class="card-body">
+            <h4 class="fw-bold">Practitioner Not Found</h4>
+            <p class="text-muted">The requested practitioner profile does not exist or has been removed.</p>
+            <a href="members" class="btn btn-brand-primary">Return to Roster</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        <!-- Practitioner Info Card -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm p-4 bg-white" style="border-radius: 8px;">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="avatar-circle-lg">
+                        @_member.FirstName[0]@_member.LastName[0]
+                    </div>
+                    <div>
+                        <h3 class="m-0 fw-bold text-dark">@_member.FirstName @_member.LastName</h3>
+                        <span class="badge @(_member.Roles.HasFlag(PractitionerRole.Instructor) ? "bg-dark" : "bg-light text-dark border") mt-1">
+                            @_member.Roles
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="text-muted small fw-bold text-uppercase d-block mb-1">Active Rank & Degrees</label>
+                    <BjjBeltBadge Rank="@_member.CurrentRank" />
+                </div>
+
+                <div class="d-grid mb-4">
+                    <button class="btn btn-brand-accent fw-bold" @onclick="() => _showPromoteModal = true">
+                        🎓 Award Belt / Stripe Promotion
+                    </button>
+                </div>
+
+                <div class="border-top pt-3">
+                    <div class="d-flex justify-content-between text-muted small mb-2">
+                        <span>Email:</span>
+                        <span class="text-dark fw-medium">@_member.Email</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small mb-2">
+                        <span>Academy ID:</span>
+                        <span class="text-dark font-monospace small">@_member.AcademyId.ToString()[..8]...</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small">
+                        <span>Ladder:</span>
+                        <span class="text-dark fw-medium">@_member.CurrentRank.Ladder</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graduation History Timeline -->
+        <div class="col-lg-7">
+            <GraduationTimeline Graduations="@_member.Graduations" />
+        </div>
+    </div>
+
+    <PromoteMemberModal 
+        @bind-IsOpen="_showPromoteModal" 
+        Member="_member" 
+        OnMemberPromoted="HandleMemberPromoted" />
+}
+
+<style>
+    .avatar-circle-lg {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background-color: #20409A;
+        color: #FFFFFF;
+        font-weight: 800;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #FFEE00;
+    }
+</style>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private MemberDto? _member;
+    private bool _isLoading = true;
+    private bool _showPromoteModal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMemberAsync();
+    }
+
+    private async Task LoadMemberAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _member = await MemberApi.GetMemberByIdAsync(Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void HandleMemberPromoted(MemberDto updatedMember)
+    {
+        _member = updatedMember;
+    }
+}

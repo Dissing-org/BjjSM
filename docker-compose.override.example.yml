@@ -1,0 +1,13 @@
+services:
+  bjjsm-api:
+    networks:
+      - cloudflare_net
+
+  bjjsm-web:
+    networks:
+      - cloudflare_net
+
+networks:
+  cloudflare_net:
+    name: familymanagementsystem_default
+    external: true

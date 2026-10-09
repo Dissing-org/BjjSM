@@ -1,0 +1,29 @@
+<Solution>
+  <Folder Name="/01. Shared/">
+    <Project Path="src/Shared/BjjSM.SharedKernel/BjjSM.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/02. Modules/" />
+  <Folder Name="/02. Modules/Curriculum/">
+    <Project Path="src/Modules/Curriculum/BjjSM.Modules.Curriculum.Application/BjjSM.Modules.Curriculum.Application.csproj" />
+    <Project Path="src/Modules/Curriculum/BjjSM.Modules.Curriculum.Domain/BjjSM.Modules.Curriculum.Domain.csproj" />
+    <Project Path="src/Modules/Curriculum/BjjSM.Modules.Curriculum.Infrastructure/BjjSM.Modules.Curriculum.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/02. Modules/Memberships/">
+    <Project Path="src/Modules/Memberships/BjjSM.Modules.Memberships.Application/BjjSM.Modules.Memberships.Application.csproj" />
+    <Project Path="src/Modules/Memberships/BjjSM.Modules.Memberships.Domain/BjjSM.Modules.Memberships.Domain.csproj" />
+    <Project Path="src/Modules/Memberships/BjjSM.Modules.Memberships.Infrastructure/BjjSM.Modules.Memberships.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/03. Apps/">
+    <Project Path="src/Apps/BjjSM.Api/BjjSM.Api.csproj" />
+    <Project Path="src/Apps/BjjSM.Client/BjjSM.Client.csproj" />
+  </Folder>
+  <Folder Name="/04. Tests/">
+    <Project Path="tests/Architecture/BjjSM.ArchitectureTests/BjjSM.ArchitectureTests.csproj" />
+  </Folder>
+  <Folder Name="/04. Tests/Curriculum/">
+    <Project Path="tests/Modules/Curriculum/BjjSM.Modules.Curriculum.Domain.Tests/BjjSM.Modules.Curriculum.Domain.Tests.csproj" />
+  </Folder>
+  <Folder Name="/04. Tests/Memberships/">
+    <Project Path="tests/Modules/Memberships/BjjSM.Modules.Memberships.Domain.Tests/BjjSM.Modules.Memberships.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

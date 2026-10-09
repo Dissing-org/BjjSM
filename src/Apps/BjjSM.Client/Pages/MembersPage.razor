@@ -1,0 +1,255 @@
+@page "/members"
+@inject IMemberApiClient MemberApi
+@inject NavigationManager Nav
+
+<PageTitle>BjjSM - Member Roster</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h2 fw-bold text-dark m-0">🥋 Practitioner Roster</h1>
+        <p class="text-muted m-0">Manage students, instructors, and belt rank progressions</p>
+    </div>
+    <div>
+        <button class="btn btn-brand-primary d-flex align-items-center gap-2" @onclick="() => _showCreateModal = true">
+            <span>+</span> Register Practitioner
+        </button>
+    </div>
+</div>
+
+<!-- Search & Belt Filter Toolbar -->
+<div class="card border-0 shadow-sm mb-4" style="background-color: #FFFFFF; border-radius: 8px;">
+    <div class="card-body p-3">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-7">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">🔍</span>
+                    <input type="text" class="form-control border-start-0 ps-0" placeholder="Search practitioners by name or email..." @bind="_searchTerm" @bind:event="oninput" />
+                </div>
+            </div>
+            <div class="col-md-5 d-flex gap-2">
+                <select class="form-select" @bind="_filterBelt">
+                    <option value="">All Belt Ranks</option>
+                    <option value="White">White Belts</option>
+                    <option value="Blue">Blue Belts</option>
+                    <option value="Purple">Purple Belts</option>
+                    <option value="Brown">Brown Belts</option>
+                    <option value="Black">Black Belts</option>
+                </select>
+                <select class="form-select" @bind="_filterRole">
+                    <option value="">All Roles</option>
+                    <option value="Student">Students</option>
+                    <option value="Instructor">Instructors</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Members Table -->
+@if (!string.IsNullOrEmpty(_loadError))
+{
+    <div class="card border-0 shadow-sm p-4 bg-white mb-4" style="border-left: 6px solid #DC2626 !important; border-radius: 8px;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold text-danger m-0">⚠️ Academy Roster Unavailable</h5>
+                <p class="text-muted m-0 mt-1 small">@_loadError</p>
+            </div>
+            <button class="btn btn-brand-primary btn-sm d-flex align-items-center gap-1" @onclick="LoadMembersAsync">
+                <span>🔄</span> Retry
+            </button>
+        </div>
+    </div>
+}
+else if (_isLoading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status" style="color: var(--brand-blue) !important;">
+            <span class="visually-hidden">Loading practitioners...</span>
+        </div>
+        <p class="text-muted mt-2">Loading academy roster...</p>
+    </div>
+}
+else if (!FilteredMembers.Any())
+{
+    <div class="card border-0 shadow-sm text-center py-5 bg-white">
+        <div class="card-body">
+            <div style="font-size: 3rem;">🥋</div>
+            <h4 class="fw-bold mt-2">No practitioners found</h4>
+            <p class="text-muted">No students or instructors match your current search criteria.</p>
+            <button class="btn btn-brand-primary" @onclick="() => _showCreateModal = true">
+                Register First Practitioner
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm overflow-hidden bg-white">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #0B0F19; color: #FFFFFF;">
+                    <tr>
+                        <th class="py-3 ps-3">Practitioner</th>
+                        <th class="py-3">Role</th>
+                        <th class="py-3">Current Belt & Stripes</th>
+                        <th class="py-3 text-center">Graduations</th>
+                        <th class="py-3 text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var member in FilteredMembers)
+                    {
+                        <tr>
+                            <td class="ps-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar-circle">
+                                        @member.FirstName[0]@member.LastName[0]
+                                    </div>
+                                    <div>
+                                        <a href="members/@member.Id" class="fw-bold text-decoration-none text-dark hover-blue">
+                                            @member.FirstName @member.LastName
+                                        </a>
+                                        <div class="small text-muted">@member.Email</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge @(member.Roles.HasFlag(PractitionerRole.Instructor) ? "bg-dark" : "bg-light text-dark border")">
+                                    @member.Roles
+                                </span>
+                            </td>
+                            <td>
+                                <BjjBeltBadge Rank="@member.CurrentRank" />
+                            </td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill bg-light text-dark border px-2 py-1">
+                                    @(member.Graduations.Count) @(member.Graduations.Count == 1 ? "promotion" : "promotions")
+                                </span>
+                            </td>
+                            <td class="text-end pe-3">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button class="btn btn-sm btn-brand-accent px-2 py-1" title="Promote" @onclick="() => OpenPromoteModal(member)">
+                                        🎓 Promote
+                                    </button>
+                                    <a href="members/@member.Id" class="btn btn-sm btn-outline-secondary px-2 py-1">
+                                        Profile
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<CreateMemberModal 
+    @bind-IsOpen="_showCreateModal" 
+    OnMemberCreated="HandleMemberCreated" />
+
+<PromoteMemberModal 
+    @bind-IsOpen="_showPromoteModal" 
+    Member="_selectedMemberToPromote" 
+    OnMemberPromoted="HandleMemberPromoted" />
+
+<style>
+    .avatar-circle {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #20409A;
+        color: #FFFFFF;
+        font-weight: 700;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #FFEE00;
+    }
+    .hover-blue:hover {
+        color: #20409A !important;
+        text-decoration: underline !important;
+    }
+</style>
+
+@code {
+    private List<MemberDto> _members = [];
+    private bool _isLoading = true;
+    private string? _loadError;
+    private string _searchTerm = "";
+    private string _filterBelt = "";
+    private string _filterRole = "";
+
+    private bool _showCreateModal;
+    private bool _showPromoteModal;
+    private MemberDto? _selectedMemberToPromote;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMembersAsync();
+    }
+
+    private async Task LoadMembersAsync()
+    {
+        _isLoading = true;
+        _loadError = null;
+        try
+        {
+            var result = await MemberApi.GetMembersAsync();
+            _members = result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _loadError = $"Unable to load members: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private IEnumerable<MemberDto> FilteredMembers => _members.Where(m =>
+    {
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            var matchName = $"{m.FirstName} {m.LastName}".Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
+            var matchEmail = m.Email.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
+            if (!matchName && !matchEmail) return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filterBelt))
+        {
+            if (!string.Equals(m.CurrentRank.BeltName, _filterBelt, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filterRole))
+        {
+            if (!m.Roles.ToString().Contains(_filterRole, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        return true;
+    });
+
+    private void OpenPromoteModal(MemberDto member)
+    {
+        _selectedMemberToPromote = member;
+        _showPromoteModal = true;
+    }
+
+    private void HandleMemberCreated(MemberDto newMember)
+    {
+        _members.Insert(0, newMember);
+    }
+
+    private void HandleMemberPromoted(MemberDto updatedMember)
+    {
+        var idx = _members.FindIndex(m => m.Id == updatedMember.Id);
+        if (idx >= 0)
+        {
+            _members[idx] = updatedMember;
+        }
+    }
+}
