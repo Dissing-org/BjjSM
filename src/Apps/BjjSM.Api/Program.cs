@@ -8,10 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// FastEndpoints
 builder.Services.AddFastEndpoints();
 
-// Database Connections (SQLite)
 var dataDir = Path.Combine(builder.Environment.ContentRootPath, "data");
 Directory.CreateDirectory(dataDir);
 
@@ -24,12 +22,10 @@ var curriculumConn = builder.Configuration.GetConnectionString("CurriculumDb")
 builder.Services.AddDbContext<MembershipsDbContext>(opt => opt.UseSqlite(membershipsConn));
 builder.Services.AddDbContext<CurriculumDbContext>(opt => opt.UseSqlite(curriculumConn));
 
-// Repositories & Services
 builder.Services.AddScoped<IPractitionerRepository, PractitionerRepository>();
 builder.Services.AddScoped<IMonthlyPlanRepository, MonthlyPlanRepository>();
 builder.Services.AddScoped<ISyllabusPdfGenerator, QuestPdfSyllabusGenerator>();
 
-// CORS for Blazor WASM development
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -43,7 +39,6 @@ var app = builder.Build();
 app.UseCors();
 app.UseFastEndpoints();
 
-// Auto-create database schemas and seed initial data on startup
 using (var scope = app.Services.CreateScope())
 {
     var memDb = scope.ServiceProvider.GetRequiredService<MembershipsDbContext>();

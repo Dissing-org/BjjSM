@@ -1,7 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy project files for restore caching
 COPY src/Shared/BjjSM.SharedKernel/*.csproj src/Shared/BjjSM.SharedKernel/
 COPY src/Modules/Memberships/BjjSM.Modules.Memberships.Domain/*.csproj src/Modules/Memberships/BjjSM.Modules.Memberships.Domain/
 COPY src/Modules/Curriculum/BjjSM.Modules.Curriculum.Domain/*.csproj src/Modules/Curriculum/BjjSM.Modules.Curriculum.Domain/
@@ -9,7 +8,6 @@ COPY src/Apps/BjjSM.Client/*.csproj src/Apps/BjjSM.Client/
 
 RUN dotnet restore src/Apps/BjjSM.Client/BjjSM.Client.csproj
 
-# Copy source files
 COPY src/Shared/ src/Shared/
 COPY src/Modules/Memberships/BjjSM.Modules.Memberships.Domain/ src/Modules/Memberships/BjjSM.Modules.Memberships.Domain/
 COPY src/Modules/Curriculum/BjjSM.Modules.Curriculum.Domain/ src/Modules/Curriculum/BjjSM.Modules.Curriculum.Domain/

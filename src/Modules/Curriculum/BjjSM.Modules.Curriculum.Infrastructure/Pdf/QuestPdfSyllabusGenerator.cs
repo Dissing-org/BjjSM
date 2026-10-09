@@ -8,7 +8,6 @@ namespace BjjSM.Modules.Curriculum.Infrastructure.Pdf;
 
 public sealed class QuestPdfSyllabusGenerator : ISyllabusPdfGenerator
 {
-    // Brand Tokens strictly from AGENTS.md
     private static readonly Color BrandBlue = Color.FromHex("#20409A");
     private static readonly Color BrandYellow = Color.FromHex("#FFEE00");
     private static readonly Color InsigniaBlack = Color.FromHex("#050505");
@@ -37,7 +36,6 @@ public sealed class QuestPdfSyllabusGenerator : ISyllabusPdfGenerator
                 page.PageColor(CrispWhite);
                 page.DefaultTextStyle(x => x.FontFamily("Lato").FontColor(InsigniaBlack));
 
-                // 1. Header with Brand Blue
                 page.Header().Column(col =>
                 {
                     col.Item().Background(BrandBlue).PaddingVertical(10).PaddingHorizontal(16).Row(row =>
@@ -58,10 +56,8 @@ public sealed class QuestPdfSyllabusGenerator : ISyllabusPdfGenerator
                         });
                     });
 
-                    // 4pt Brand Yellow divider strip
                     col.Item().Height(4).Background(BrandYellow);
 
-                    // Objective banner
                     col.Item().Background(SurfaceLight).Padding(8).Row(r =>
                     {
                         r.AutoItem().Text("MONTHLY OBJECTIVE: ").Bold().FontSize(10).FontColor(BrandBlue);
@@ -69,7 +65,6 @@ public sealed class QuestPdfSyllabusGenerator : ISyllabusPdfGenerator
                     });
                 });
 
-                // 2. Weekly Grid (Columns)
                 page.Content().PaddingTop(10).Row(row =>
                 {
                     var weeks = plan.Weeks.OrderBy(w => w.WeekNumber).ToList();
@@ -77,7 +72,6 @@ public sealed class QuestPdfSyllabusGenerator : ISyllabusPdfGenerator
                     {
                         row.RelativeItem().PaddingHorizontal(4).Border(1).BorderColor(BorderGray).Background(CrispWhite).Column(col =>
                         {
-                            // Week header pill
                             col.Item().Background(BrandBlue).Padding(6).Row(hr =>
                             {
                                 hr.AutoItem().Background(BrandYellow).PaddingHorizontal(4).PaddingVertical(1)
@@ -87,7 +81,6 @@ public sealed class QuestPdfSyllabusGenerator : ISyllabusPdfGenerator
                                     .Bold().FontSize(9).FontColor(CrispWhite);
                             });
 
-                            // Techniques
                             col.Item().Padding(6).Column(tc =>
                             {
                                 if (!week.Techniques.Any())
@@ -130,7 +123,6 @@ public sealed class QuestPdfSyllabusGenerator : ISyllabusPdfGenerator
                     }
                 });
 
-                // 3. Footer
                 page.Footer().Row(r =>
                 {
                     r.RelativeItem().Text("BjjSM Academy Management - Curriculum Syllabus").FontSize(8).FontColor(TextMuted);

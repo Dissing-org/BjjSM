@@ -446,7 +446,6 @@ else
 </style>
 
 @code {
-    // Canonical academy and unified curriculum program ID
     private readonly Guid _academyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private readonly Guid _unifiedProgramId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
@@ -461,28 +460,23 @@ else
     private int _newWeekCount = 4;
     private string? _createError;
 
-    // Objective inline editing
     private bool _isEditingObjective;
     private string _editingObjectiveText = "";
     private bool _isSavingObjective;
     private string? _objectiveError;
 
-    // Weekly theme inline editing
     private int? _editingWeekNumber;
     private string _editingWeekThemeText = "";
     private bool _isSavingWeekTheme;
     private string? _weekThemeError;
 
-    // Add technique modal
     private bool _showAddModal;
     private int _selectedWeekForAdd;
 
-    // Edit technique modal
     private bool _showEditModal;
     private int _selectedWeekForEdit;
     private TechniqueDrillDto? _techniqueToEdit;
 
-    // Delete technique modal
     private bool _showDeleteTechModal;
     private int _deleteTechWeekNumber;
     private Guid _deleteTechId;
@@ -490,7 +484,6 @@ else
     private bool _isDeletingTech;
     private string? _deleteTechError;
 
-    // Delete plan modal
     private bool _showDeletePlanModal;
     private bool _isDeletingPlan;
     private string? _deletePlanError;
