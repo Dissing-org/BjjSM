@@ -2,22 +2,93 @@
 
 <PageTitle>BjjSM - Årshjul (Annual Curriculum Wheel)</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
         <h1 class="h2 fw-bold text-dark m-0">🎡 Årshjul (Annual Curriculum Wheel)</h1>
         <p class="text-muted m-0">12 måneders samlet pensum &bull; BJJ temaprogressioner fra Closed Guard til Belt Prep</p>
     </div>
     <div class="d-flex gap-2 align-items-center">
-        <select class="form-select fw-bold" style="width: 120px;" @bind="_selectedYear" @bind:after="LoadWheelAsync">
+        <select class="form-select fw-bold shadow-sm" style="width: 120px;" @bind="_selectedYear" @bind:after="LoadWheelAsync">
             <option value="2025">2025</option>
             <option value="2026">2026</option>
             <option value="2027">2027</option>
         </select>
-        <button class="btn btn-brand-primary d-flex align-items-center gap-1" disabled="@_isLoading" @onclick="LoadWheelAsync">
+        <button class="btn btn-brand-primary d-flex align-items-center gap-1 shadow-sm" disabled="@_isLoading" @onclick="LoadWheelAsync">
             <span>🔄</span> Opdater
         </button>
     </div>
 </div>
+
+<div class="card border-0 shadow-sm p-3 mb-4 bg-white" style="border-radius: 8px; border-left: 4px solid var(--brand-blue) !important;">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="fs-4">💡</span>
+            <div>
+                <span class="fw-bold text-dark">Interaktiv planlægning:</span>
+                <span class="text-muted small ms-1">
+                    Træk et <strong>temakort</strong> op på en måned for at tildele, eller træk en <strong>måned over på en anden</strong> for at bytte om. Du kan også klikke på et tema eller en måned for at placere/bytte direkte.
+                </span>
+            </div>
+        </div>
+        @if (_wheel is not null)
+        {
+            <div class="d-flex gap-2 align-items-center">
+                <span class="badge" style="background-color: var(--brand-blue); color: var(--brand-yellow); font-weight: 700; font-size: 0.85rem;">
+                    @_wheel.Slots.Count(s => s.IsInstantiated) / 12 Oprettet i Planner
+                </span>
+            </div>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center justify-content-between mb-3 shadow-sm" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <span class="fs-5">⚠️</span>
+            <span>@_errorMessage</span>
+        </div>
+        <button type="button" class="btn-close" @onclick="() => _errorMessage = null" aria-label="Luk"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_successMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center justify-content-between mb-3 shadow-sm" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <span class="fs-5">✅</span>
+            <span>@_successMessage</span>
+        </div>
+        <button type="button" class="btn-close" @onclick="() => _successMessage = null" aria-label="Luk"></button>
+    </div>
+}
+
+@if (_selectedThemeToPlace.HasValue)
+{
+    var chosenTheme = _availableThemes.FirstOrDefault(t => t.Id == _selectedThemeToPlace.Value);
+    <div class="alert alert-warning d-flex align-items-center justify-content-between mb-3 shadow-sm border" style="background-color: #FFFDE6; border-color: var(--brand-yellow) !important;">
+        <div class="d-flex align-items-center gap-2">
+            <span>🎯</span>
+            <div>
+                <strong>@(chosenTheme?.Name ?? "Tema")</strong> er valgt. Klik på den <strong>måned</strong>, du vil tildele dette tema til.
+            </div>
+        </div>
+        <button class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => _selectedThemeToPlace = null">Annuller</button>
+    </div>
+}
+
+@if (_selectedMonthToSwap.HasValue)
+{
+    <div class="alert alert-warning d-flex align-items-center justify-content-between mb-3 shadow-sm border" style="background-color: #FFFDE6; border-color: var(--brand-yellow) !important;">
+        <div class="d-flex align-items-center gap-2">
+            <span>🔀</span>
+            <div>
+                Byt-tilstand er aktiv for <strong>@GetMonthName(_selectedMonthToSwap.Value)</strong>. Klik på den <strong>anden måned</strong>, du vil bytte den om med.
+            </div>
+        </div>
+        <button class="btn btn-sm btn-outline-dark fw-bold" @onclick="ToggleSwapMode">Annuller</button>
+    </div>
+}
 
 @if (_isLoading)
 {
@@ -28,51 +99,234 @@
         <p class="text-muted mt-2">Henter 12 måneders pensumstruktur...</p>
     </div>
 }
-else if (!string.IsNullOrEmpty(_errorMessage))
-{
-    <div class="alert alert-danger">@_errorMessage</div>
-}
 else if (_wheel is not null)
 {
     <div class="row g-4">
+        <!-- Main Interactive Canvas (Top Month Slots + Theme Catalog) -->
         <div class="col-lg-8">
+            <!-- 12 Calendar Month Target Slots -->
             <div class="card border-0 shadow-sm p-3 mb-4 bg-white" style="border-radius: 8px;">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="fw-bold text-dark">Månedsplaner for @_wheel.Year</span>
-                    <span class="badge" style="background-color: var(--brand-blue); color: var(--brand-yellow); font-weight: 700;">
-                        @_wheel.Slots.Count(s => s.IsInstantiated)/12 Oprettet i Planner
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="fw-bold text-dark m-0">📅 Kalendermåneder (Drop-zoner)</h5>
+                        <span class="badge bg-light text-dark border">@_wheel.Year</span>
+                    </div>
+                    <span class="text-muted small">
+                        Træk et tema hertil for at tildele, eller træk en måned for at bytte
                     </span>
                 </div>
 
-                <div class="row g-3">
-                    @foreach (var slot in _wheel.Slots.OrderBy(s => s.Month))
+                @for (int q = 1; q <= 4; q++)
+                {
+                    var quarter = q;
+                    var quarterMonths = _wheel.Slots.Where(s => (s.Month - 1) / 3 + 1 == quarter).OrderBy(s => s.Month).ToList();
+                    var quarterTitle = quarter switch
                     {
-                        var isSelected = _selectedMonth == slot.Month;
-                        var cardBorderClass = isSelected ? "border-primary shadow" : "border";
-                        var bgClass = isSelected ? "bg-light" : "bg-white";
+                        1 => "Q1: Fundamentals & Positionering (Januar - Marts)",
+                        2 => "Q2: Angreb & Afslutninger (April - Juni)",
+                        3 => "Q3: Forsvar & Kontraangreb (Juli - September)",
+                        _ => "Q4: Integration & Bælteforberedelse (Oktober - December)"
+                    };
+
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-2 px-1">
+                            <span class="badge" style="background-color: var(--brand-blue); color: var(--brand-yellow); font-weight: 700; font-size: 0.75rem;">
+                                Q@quarter
+                            </span>
+                            <span class="fw-bold text-muted" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                @quarterTitle
+                            </span>
+                        </div>
+
+                        <div class="row g-2">
+                            @foreach (var slot in quarterMonths)
+                            {
+                                var isSelected = _selectedMonth == slot.Month;
+                                var isHovered = _hoveredDropMonth == slot.Month;
+                                var isSwapSource = _selectedMonthToSwap == slot.Month;
+                                var category = GetThemeCategory(slot.ThemeId);
+
+                                var inlineStyle = "border-radius: 6px; cursor: pointer; transition: all 0.15s ease;";
+
+                                if (isHovered)
+                                {
+                                    inlineStyle += "border: 2px dashed #FFEE00 !important; background-color: #EBF0FA !important; transform: scale(1.02); box-shadow: 0 6px 16px rgba(32, 64, 154, 0.2);";
+                                }
+                                else if (isSwapSource)
+                                {
+                                    inlineStyle += "border: 2px dashed #FFEE00 !important; background-color: #FFFDE6 !important;";
+                                }
+                                else if (isSelected)
+                                {
+                                    inlineStyle += "border: 2px solid #20409A !important; background-color: #F8FAFC !important; box-shadow: 0 4px 12px rgba(32, 64, 154, 0.12);";
+                                }
+                                else
+                                {
+                                    inlineStyle += "border: 1px solid #E2E8F0; background-color: #FFFFFF;";
+                                }
+
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="card h-100 p-3 month-slot-card position-relative"
+                                         style="@inlineStyle"
+                                         draggable="true"
+                                         @ondragstart="() => OnDragStartMonth(slot.Month)"
+                                         @ondragend="OnDragEnd"
+                                         @ondragover="() => OnDragOverMonth(slot.Month)"
+                                         @ondragover:preventDefault="true"
+                                         @ondragleave="() => OnDragLeaveMonth(slot.Month)"
+                                         @ondrop="() => OnDropOnMonthAsync(slot.Month)"
+                                         @ondrop:preventDefault="true"
+                                         @onclick="() => OnClickMonthSlotAsync(slot.Month)">
+
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="fw-bold d-flex align-items-center gap-1" style="color: var(--brand-blue); font-size: 0.95rem;">
+                                                <span class="grip-icon" title="Træk for at bytte om" style="cursor: grab; color: #94A3B8;">⠿</span>
+                                                @slot.Month. @GetMonthName(slot.Month)
+                                            </span>
+                                            @if (slot.IsInstantiated)
+                                            {
+                                                <span class="badge bg-success small" style="font-size: 0.7rem;">✓ I pensum</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary small" style="font-size: 0.7rem;">Planlagt</span>
+                                            }
+                                        </div>
+
+                                        <div class="mb-1">
+                                            <span class="badge" style="background-color: var(--brand-blue-surface); color: var(--brand-blue); font-size: 0.7rem; font-weight: 600;">
+                                                @category
+                                            </span>
+                                        </div>
+
+                                        <div class="fw-bold text-dark small mb-1" style="min-height: 38px; line-height: 1.25;">
+                                            @slot.ThemeName
+                                        </div>
+
+                                        <div class="text-muted small text-truncate" title="@slot.Objective" style="font-size: 0.75rem;">
+                                            @slot.Objective
+                                        </div>
+
+                                        <div class="d-flex justify-content-between align-items-center mt-2 pt-1 border-top text-muted" style="font-size: 0.7rem;">
+                                            @if (isHovered)
+                                            {
+                                                <span class="badge w-100 py-1" style="background-color: var(--brand-blue); color: var(--brand-yellow); font-weight: 700;">
+                                                    👉 Slip her for at tildele / bytte
+                                                </span>
+                                            }
+                                            else if (isSwapSource)
+                                            {
+                                                <span class="badge bg-warning text-dark w-100 py-1">
+                                                    Vælg modpart til byt
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">⠿ Træk for at bytte</span>
+                                                @if (isSelected)
+                                                {
+                                                    <span class="badge bg-primary" style="background-color: var(--brand-blue) !important;">Valgt</span>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Theme Catalog Pool (Cards med temaer) -->
+            <div class="card border-0 shadow-sm p-3 mb-4 bg-white" style="border-radius: 8px;">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                        <h5 class="fw-bold text-dark m-0 d-flex align-items-center gap-2">
+                            <span>🥋 BJJ Temakatalog (Cards med temaer)</span>
+                            <span class="badge" style="background-color: var(--brand-blue); color: var(--brand-yellow); font-weight: 700;">
+                                @_availableThemes.Count temaer
+                            </span>
+                        </h5>
+                        <p class="text-muted small m-0 mt-1">
+                            Træk et temakort op på en måned ovenfor, eller klik på et tema for at placere det med klik.
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                        @foreach (var cat in AvailableCategories)
+                        {
+                            var isCatActive = _selectedCategory == cat;
+                            <button type="button"
+                                    class="btn btn-sm @(isCatActive ? "btn-brand-primary" : "btn-outline-secondary") py-0 px-2"
+                                    style="font-size: 0.78rem; border-radius: 20px;"
+                                    @onclick="() => _selectedCategory = cat">
+                                @cat
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    @foreach (var theme in FilteredThemes)
+                    {
+                        var isSelectedToPlace = _selectedThemeToPlace == theme.Id;
+                        var assignedMonths = GetAssignedMonthsForTheme(theme.Id);
+
+                        var cardStyle = "cursor: grab; border-radius: 6px; transition: all 0.2s ease;";
+                        if (isSelectedToPlace)
+                        {
+                            cardStyle += "border: 2px solid #FFEE00 !important; background-color: #FFFDE6 !important; box-shadow: 0 0 12px rgba(255, 238, 0, 0.6);";
+                        }
+                        else
+                        {
+                            cardStyle += "border: 1px solid #E2E8F0; background-color: #FFFFFF;";
+                        }
 
                         <div class="col-md-4 col-sm-6">
-                            <div class="card h-100 p-3 month-slot-card @cardBorderClass @bgClass" 
-                                 style="cursor: pointer; transition: all 0.15s ease;"
-                                 @onclick="() => SelectMonth(slot.Month)">
+                            <div class="card h-100 p-3 theme-card shadow-sm"
+                                 style="@cardStyle"
+                                 draggable="true"
+                                 @ondragstart="() => OnDragStartTheme(theme.Id)"
+                                 @ondragend="OnDragEnd"
+                                 @onclick="() => OnClickTheme(theme.Id)">
+
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="fw-bold" style="color: var(--brand-blue); font-size: 1rem;">
-                                        @GetMonthName(slot.Month)
+                                    <span class="badge" style="background-color: var(--brand-blue-surface); color: var(--brand-blue); font-size: 0.72rem; font-weight: 600;">
+                                        @theme.Category
                                     </span>
-                                    @if (slot.IsInstantiated)
+                                    <span class="text-muted fw-bold grip-icon" style="font-size: 1.1rem; cursor: grab;" title="Træk dette temakort">⠿</span>
+                                </div>
+
+                                <div class="fw-bold text-dark small mb-1" style="min-height: 40px; line-height: 1.25;">
+                                    @theme.Name
+                                </div>
+
+                                <div class="text-muted small mb-2 text-truncate-2" title="@theme.DefaultObjective" style="font-size: 0.76rem; min-height: 36px; line-height: 1.2;">
+                                    @theme.DefaultObjective
+                                </div>
+
+                                <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                    @if (assignedMonths.Count > 0)
                                     {
-                                        <span class="badge bg-success small">✓ Oprettet</span>
+                                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                                            <span class="text-muted" style="font-size: 0.7rem;">I hjul:</span>
+                                            @foreach (var m in assignedMonths)
+                                            {
+                                                <span class="badge" style="background-color: var(--brand-blue); color: #FFFFFF; font-size: 0.7rem;">
+                                                    @GetMonthName(m)
+                                                </span>
+                                            }
+                                        </div>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary small">Planlagt</span>
+                                        <span class="badge bg-light text-muted border" style="font-size: 0.7rem;">Ikke tildelt</span>
                                     }
-                                </div>
-                                <div class="fw-bold text-dark small mb-1" style="min-height: 40px;">
-                                    @slot.ThemeName
-                                </div>
-                                <div class="text-muted small text-truncate" title="@slot.Objective" style="font-size: 0.78rem;">
-                                    @slot.Objective
+
+                                    @if (isSelectedToPlace)
+                                    {
+                                        <span class="badge bg-warning text-dark small">Placer tema 🎯</span>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -81,22 +335,32 @@ else if (_wheel is not null)
             </div>
         </div>
 
+        <!-- Right Detail Drawer & Instantiation -->
         <div class="col-lg-4">
             @if (_currentSlot is not null)
             {
                 <div class="card border-0 shadow-sm p-4 bg-white sticky-top" style="top: 1rem; border-radius: 8px; border-top: 5px solid var(--brand-blue) !important;">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge" style="background-color: var(--brand-yellow); color: var(--brand-black); font-weight: 800;">
+                        <span class="badge" style="background-color: var(--brand-yellow); color: var(--brand-black); font-weight: 800; font-size: 0.85rem;">
                             MÅNED @_currentSlot.Month
                         </span>
                         @if (_currentSlot.IsInstantiated)
                         {
-                            <span class="badge bg-success">Aktiv i pensum</span>
+                            <span class="badge bg-success">✓ Aktiv i pensum</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Planlagt</span>
                         }
                     </div>
 
                     <h4 class="fw-bold text-dark mb-1">@GetMonthName(_currentSlot.Month)</h4>
-                    <h6 class="text-muted mb-3">@_currentSlot.ThemeName</h6>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="badge" style="background-color: var(--brand-blue-surface); color: var(--brand-blue); font-size: 0.75rem;">
+                            @GetThemeCategory(_currentSlot.ThemeId)
+                        </span>
+                        <span class="text-muted small fw-semibold">@_currentSlot.ThemeName</span>
+                    </div>
 
                     <div class="p-3 bg-light rounded mb-3 border small">
                         <div class="fw-bold text-dark mb-1">Fokus & Formål:</div>
@@ -106,31 +370,53 @@ else if (_wheel is not null)
                     <div class="mb-4">
                         <label class="fw-bold text-dark small mb-2">Uge-struktur (4 uger):</label>
                         <div class="d-flex flex-column gap-2 small">
-                            <div class="p-2 border rounded bg-white">
-                                <span class="fw-bold text-primary">Uge 1:</span> Fundamentals & Positioning
-                            </div>
-                            <div class="p-2 border rounded bg-white">
-                                <span class="fw-bold text-primary">Uge 2:</span> Primary Attacks & Submissions
-                            </div>
-                            <div class="p-2 border rounded bg-white">
-                                <span class="fw-bold text-primary">Uge 3:</span> Defense & Counters
-                            </div>
-                            <div class="p-2 border rounded bg-white">
-                                <span class="fw-bold text-primary">Uge 4:</span> Situational Sparring & Integration
-                            </div>
+                            @for (int w = 1; w <= 4; w++)
+                            {
+                                var weekNum = w;
+                                var weekThemeName = weekNum switch
+                                {
+                                    1 => "Fundamentals & Positioning",
+                                    2 => "Primary Attacks & Submissions",
+                                    3 => "Defense & Counters",
+                                    _ => "Situational Sparring & Integration"
+                                };
+                                var drill = _currentTheme?.DefaultDrills.FirstOrDefault(d => d.TargetWeekNumber == weekNum);
+
+                                <div class="p-2 border rounded bg-white shadow-sm">
+                                    <div class="fw-bold text-primary mb-1">Uge @weekNum: @weekThemeName</div>
+                                    @if (drill is not null)
+                                    {
+                                        <div class="text-dark fw-semibold" style="font-size: 0.8rem;">
+                                            📌 @drill.Title
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(drill.CoachingNotes))
+                                        {
+                                            <div class="text-muted mt-1" style="font-size: 0.72rem;">
+                                                @drill.CoachingNotes
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-muted fst-italic" style="font-size: 0.75rem;">
+                                            Standard pensumprogression
+                                        </div>
+                                    }
+                                </div>
+                            }
                         </div>
                     </div>
 
                     <div class="d-flex flex-column gap-2">
                         @if (_currentSlot.IsInstantiated)
                         {
-                            <button class="btn btn-success fw-bold py-2" @onclick="NavigateToPlanner">
+                            <button class="btn btn-success fw-bold py-2 shadow-sm" @onclick="NavigateToPlanner">
                                 ✅ Måned oprettet! [Åbn i Curriculum Planner ->]
                             </button>
                         }
                         else
                         {
-                            <button class="btn btn-brand-primary fw-bold py-2" disabled="@_isInstantiating" @onclick="InstantiateCurrentMonthAsync">
+                            <button class="btn btn-brand-primary fw-bold py-2 shadow-sm" disabled="@_isInstantiating" @onclick="InstantiateCurrentMonthAsync">
                                 @if (_isInstantiating)
                                 {
                                     <span class="spinner-border spinner-border-sm me-1" role="status"></span>
@@ -143,12 +429,21 @@ else if (_wheel is not null)
                             </button>
                         }
 
-                        <button class="btn btn-outline-secondary btn-sm fw-semibold" @onclick="OpenSwapModal">
-                            🔀 Byt om på måneder
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm fw-semibold" @onclick="OpenThemeModal">
-                            🎯 Skift tema
-                        </button>
+                        @if (_selectedMonthToSwap == _currentSlot.Month)
+                        {
+                            <button class="btn btn-warning fw-bold text-dark py-2 shadow-sm" @onclick="ToggleSwapMode">
+                                ❌ Annuller byt
+                            </button>
+                            <div class="alert alert-warning py-2 px-3 small mb-0 border" style="background-color: #FFFDE6;">
+                                Klik på den måned du vil bytte <strong>@GetMonthName(_currentSlot.Month)</strong> med.
+                            </div>
+                        }
+                        else
+                        {
+                            <button class="btn btn-outline-secondary btn-sm fw-semibold py-2" @onclick="ToggleSwapMode">
+                                🔀 Byt med anden måned
+                            </button>
+                        }
                     </div>
                 </div>
             }
@@ -156,89 +451,33 @@ else if (_wheel is not null)
     </div>
 }
 
-@if (_showSwapModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header" style="background-color: var(--brand-blue); border-bottom: 2px solid var(--brand-yellow); color: #FFFFFF;">
-                    <h5 class="modal-title fw-bold">🔀 Byt om på måneder</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showSwapModal = false"></button>
-                </div>
-                <div class="modal-body p-4 bg-white">
-                    <p>Vælg hvilken måned <strong>@GetMonthName(_selectedMonth)</strong> skal byttes med:</p>
-                    <select class="form-select mb-3" @bind="_targetSwapMonth">
-                        @for (int m = 1; m <= 12; m++)
-                        {
-                            if (m != _selectedMonth)
-                            {
-                                <option value="@m">@GetMonthName(m) (@_wheel?.Slots.FirstOrDefault(s => s.Month == m)?.ThemeName)</option>
-                            }
-                        }
-                    </select>
-                    @if (!string.IsNullOrEmpty(_modalError))
-                    {
-                        <div class="alert alert-danger py-2 small">@_modalError</div>
-                    }
-                </div>
-                <div class="modal-footer bg-light border-top">
-                    <button type="button" class="btn btn-outline-secondary" @onclick="() => _showSwapModal = false">Annuller</button>
-                    <button type="button" class="btn btn-brand-primary fw-bold" disabled="@_isSubmittingModal" @onclick="ExecuteSwapAsync">
-                        Byt måneder
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-@if (_showThemeModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header" style="background-color: var(--brand-blue); border-bottom: 2px solid var(--brand-yellow); color: #FFFFFF;">
-                    <h5 class="modal-title fw-bold">🎯 Vælg nyt BJJ Tema for @GetMonthName(_selectedMonth)</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showThemeModal = false"></button>
-                </div>
-                <div class="modal-body p-4 bg-white" style="max-height: 60vh; overflow-y: auto;">
-                    <div class="row g-2">
-                        @foreach (var theme in _availableThemes)
-                        {
-                            var isChosen = _targetThemeId == theme.Id;
-                            <div class="col-12">
-                                <div class="card p-3 border @(isChosen ? "border-primary bg-light" : "")"
-                                     style="cursor: pointer;"
-                                     @onclick="() => _targetThemeId = theme.Id">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="fw-bold">@theme.Name</div>
-                                        <span class="badge bg-secondary">@theme.Category</span>
-                                    </div>
-                                    <div class="text-muted small mt-1">@theme.DefaultObjective</div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                    @if (!string.IsNullOrEmpty(_modalError))
-                    {
-                        <div class="alert alert-danger mt-3 py-2 small">@_modalError</div>
-                    }
-                </div>
-                <div class="modal-footer bg-light border-top">
-                    <button type="button" class="btn btn-outline-secondary" @onclick="() => _showThemeModal = false">Annuller</button>
-                    <button type="button" class="btn btn-brand-primary fw-bold" disabled="@_isSubmittingModal" @onclick="ExecuteAssignThemeAsync">
-                        Tildel tema
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
 <style>
+    .month-slot-card {
+        user-select: none;
+        cursor: pointer;
+    }
     .month-slot-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .theme-card {
+        user-select: none;
+        cursor: grab;
+    }
+    .theme-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 14px rgba(32, 64, 154, 0.12) !important;
+    }
+    .theme-card:active {
+        cursor: grabbing;
+    }
+    .grip-icon {
+        cursor: grab;
+    }
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 </style>
-
