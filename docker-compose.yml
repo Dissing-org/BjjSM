@@ -1,5 +1,6 @@
 services:
   bjjsm-api:
+    image: angelrush91/bjjsm-api:latest
     build:
       context: .
       dockerfile: Dockerfile.api
@@ -15,6 +16,7 @@ services:
       - bjjsm_net
 
   bjjsm-web:
+    image: angelrush91/bjjsm-web:latest
     build:
       context: .
       dockerfile: Dockerfile.client

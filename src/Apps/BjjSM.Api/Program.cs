@@ -46,6 +46,11 @@ using (var scope = app.Services.CreateScope())
 {
     var memDb = scope.ServiceProvider.GetRequiredService<MembershipsDbContext>();
     memDb.Database.EnsureCreated();
+    var memSql = memDb.Database.GenerateCreateScript()
+        .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ")
+        .Replace("CREATE INDEX ", "CREATE INDEX IF NOT EXISTS ")
+        .Replace("CREATE UNIQUE INDEX ", "CREATE UNIQUE INDEX IF NOT EXISTS ");
+    memDb.Database.ExecuteSqlRaw(memSql);
 
     if (!memDb.Practitioners.Any())
     {
@@ -90,6 +95,11 @@ using (var scope = app.Services.CreateScope())
 
     var curDb = scope.ServiceProvider.GetRequiredService<CurriculumDbContext>();
     curDb.Database.EnsureCreated();
+    var curSql = curDb.Database.GenerateCreateScript()
+        .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ")
+        .Replace("CREATE INDEX ", "CREATE INDEX IF NOT EXISTS ")
+        .Replace("CREATE UNIQUE INDEX ", "CREATE UNIQUE INDEX IF NOT EXISTS ");
+    curDb.Database.ExecuteSqlRaw(curSql);
 
     if (!curDb.CurriculumThemes.Any())
     {
