@@ -25,6 +25,9 @@ builder.Services.AddDbContext<CurriculumDbContext>(opt => opt.UseSqlite(curricul
 builder.Services.AddScoped<IPractitionerRepository, PractitionerRepository>();
 builder.Services.AddScoped<IMonthlyPlanRepository, MonthlyPlanRepository>();
 builder.Services.AddScoped<ISyllabusPdfGenerator, QuestPdfSyllabusGenerator>();
+builder.Services.AddScoped<IAnnualWheelRepository, AnnualWheelRepository>();
+builder.Services.AddScoped<ICurriculumThemeRepository, CurriculumThemeRepository>();
+builder.Services.AddScoped<IAnnualWheelService, AnnualWheelService>();
 
 builder.Services.AddCors(options =>
 {
@@ -87,6 +90,12 @@ using (var scope = app.Services.CreateScope())
 
     var curDb = scope.ServiceProvider.GetRequiredService<CurriculumDbContext>();
     curDb.Database.EnsureCreated();
+
+    if (!curDb.CurriculumThemes.Any())
+    {
+        curDb.CurriculumThemes.AddRange(BjjSM.Modules.Curriculum.Domain.CurriculumThemePresets.CreatePresets());
+        curDb.SaveChanges();
+    }
 
     if (!curDb.MonthlyPlans.Any())
     {

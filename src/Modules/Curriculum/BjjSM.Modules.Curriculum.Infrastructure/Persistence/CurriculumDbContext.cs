@@ -10,6 +10,11 @@ public class CurriculumDbContext : DbContext
     public DbSet<WeeklyFocus> WeeklyFocuses => Set<WeeklyFocus>();
     public DbSet<TechniqueDrill> TechniqueDrills => Set<TechniqueDrill>();
 
+    public DbSet<AnnualWheel> AnnualWheels => Set<AnnualWheel>();
+    public DbSet<AnnualWheelSlot> AnnualWheelSlots => Set<AnnualWheelSlot>();
+    public DbSet<CurriculumTheme> CurriculumThemes => Set<CurriculumTheme>();
+    public DbSet<ThemeDrillTemplate> ThemeDrillTemplates => Set<ThemeDrillTemplate>();
+
     public CurriculumDbContext(DbContextOptions<CurriculumDbContext> options) : base(options)
     {
     }
@@ -35,6 +40,12 @@ public class CurriculumDbContext : DbContext
         modelBuilder.ApplyConfiguration(new MonthlyPlanConfiguration());
         modelBuilder.ApplyConfiguration(new WeeklyFocusConfiguration());
         modelBuilder.ApplyConfiguration(new TechniqueDrillConfiguration());
+
+        modelBuilder.ApplyConfiguration(new AnnualWheelConfiguration());
+        modelBuilder.ApplyConfiguration(new AnnualWheelSlotConfiguration());
+        modelBuilder.ApplyConfiguration(new CurriculumThemeConfiguration());
+        modelBuilder.ApplyConfiguration(new ThemeDrillTemplateConfiguration());
+
         base.OnModelCreating(modelBuilder);
     }
 }
@@ -57,10 +68,8 @@ public class MonthlyPlanConfiguration : IEntityTypeConfiguration<MonthlyPlan>
         builder.Property(p => p.CreatedAt).IsRequired();
         builder.Property(p => p.LastModifiedAt).IsRequired();
 
-        // Unique index per (AcademyId, ProgramId, Year, Month)
         builder.HasIndex(p => new { p.AcademyId, p.ProgramId, p.Year, p.Month }).IsUnique();
 
-        // Backing field navigation _weeks
         builder.HasMany(p => p.Weeks)
             .WithOne()
             .HasForeignKey("MonthlyPlanId")
@@ -106,5 +115,92 @@ public class TechniqueDrillConfiguration : IEntityTypeConfiguration<TechniqueDri
         builder.Property(t => t.CoachingNotes).HasMaxLength(1000);
         builder.Property(t => t.ReferenceUrl).HasMaxLength(500);
         builder.Property(t => t.SortOrder).IsRequired();
+    }
+}
+
+public class AnnualWheelConfiguration : IEntityTypeConfiguration<AnnualWheel>
+{
+    public void Configure(EntityTypeBuilder<AnnualWheel> builder)
+    {
+        builder.ToTable("AnnualWheels");
+        builder.HasKey(w => w.Id);
+        builder.Property(w => w.Id).ValueGeneratedNever();
+
+        builder.Property(w => w.AcademyId).IsRequired();
+        builder.Property(w => w.ProgramId).IsRequired();
+        builder.Property(w => w.Year).IsRequired();
+        builder.Property(w => w.Status).IsRequired();
+        builder.Property(w => w.CreatedAt).IsRequired();
+        builder.Property(w => w.LastModifiedAt).IsRequired();
+
+        builder.HasIndex(w => new { w.AcademyId, w.ProgramId, w.Year }).IsUnique();
+
+        builder.HasMany(w => w.Slots)
+            .WithOne()
+            .HasForeignKey("AnnualWheelId")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(w => w.Slots)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+}
+
+public class AnnualWheelSlotConfiguration : IEntityTypeConfiguration<AnnualWheelSlot>
+{
+    public void Configure(EntityTypeBuilder<AnnualWheelSlot> builder)
+    {
+        builder.ToTable("AnnualWheelSlots");
+        builder.HasKey(s => s.Id);
+        builder.Property(s => s.Id).ValueGeneratedNever();
+        builder.Property<Guid>("AnnualWheelId").IsRequired();
+
+        builder.Property(s => s.Month).IsRequired();
+        builder.Property(s => s.ThemeId).IsRequired();
+        builder.Property(s => s.ThemeName).HasMaxLength(255).IsRequired();
+        builder.Property(s => s.Objective).HasMaxLength(1000).IsRequired();
+        builder.Property(s => s.IsInstantiated).IsRequired();
+        builder.Property(s => s.MonthlyPlanId);
+
+        builder.HasIndex("AnnualWheelId", "Month").IsUnique();
+    }
+}
+
+public class CurriculumThemeConfiguration : IEntityTypeConfiguration<CurriculumTheme>
+{
+    public void Configure(EntityTypeBuilder<CurriculumTheme> builder)
+    {
+        builder.ToTable("CurriculumThemes");
+        builder.HasKey(t => t.Id);
+        builder.Property(t => t.Id).ValueGeneratedNever();
+
+        builder.Property(t => t.Name).HasMaxLength(255).IsRequired();
+        builder.Property(t => t.Category).HasMaxLength(100).IsRequired();
+        builder.Property(t => t.DefaultObjective).HasMaxLength(1000).IsRequired();
+
+        builder.HasMany(t => t.DefaultDrills)
+            .WithOne()
+            .HasForeignKey("CurriculumThemeId")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(t => t.DefaultDrills)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+}
+
+public class ThemeDrillTemplateConfiguration : IEntityTypeConfiguration<ThemeDrillTemplate>
+{
+    public void Configure(EntityTypeBuilder<ThemeDrillTemplate> builder)
+    {
+        builder.ToTable("ThemeDrillTemplates");
+        builder.HasKey(d => d.Id);
+        builder.Property(d => d.Id).ValueGeneratedNever();
+        builder.Property<Guid>("CurriculumThemeId").IsRequired();
+
+        builder.Property(d => d.Title).HasMaxLength(255).IsRequired();
+        builder.Property(d => d.Category).IsRequired();
+        builder.Property(d => d.CoachingNotes).HasMaxLength(1000);
+        builder.Property(d => d.ReferenceUrl).HasMaxLength(500);
+        builder.Property(d => d.TargetWeekNumber).IsRequired();
+        builder.Property(d => d.SortOrder).IsRequired();
     }
 }

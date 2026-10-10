@@ -14,3 +14,10 @@ public enum TechniqueCategory
     SituationalDrill,
     CoolDown
 }
+
+public enum WheelStatus
+{
+    Draft,
+    Active,
+    Archived
+}

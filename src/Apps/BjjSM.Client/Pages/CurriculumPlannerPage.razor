@@ -446,6 +446,9 @@ else
 </style>
 
 @code {
+    [SupplyParameterFromQuery] public int? Year { get; set; }
+    [SupplyParameterFromQuery] public int? Month { get; set; }
+
     private readonly Guid _academyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private readonly Guid _unifiedProgramId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
@@ -490,7 +493,22 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        if (Year.HasValue && Month.HasValue)
+        {
+            _selectedYear = Year.Value;
+            _selectedMonth = Month.Value;
+        }
         await LoadPlanAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Year.HasValue && Month.HasValue && (Year.Value != _selectedYear || Month.Value != _selectedMonth))
+        {
+            _selectedYear = Year.Value;
+            _selectedMonth = Month.Value;
+            await LoadPlanAsync();
+        }
     }
 
     private async Task LoadPlanAsync()
