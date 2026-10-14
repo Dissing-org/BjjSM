@@ -73,3 +73,244 @@ html, body {
 .btn-brand-accent:hover {
     background-color: var(--brand-yellow-hover);
 }
+
+/* =========================================================
+   WoW Classic Talent Tree Styling
+   ========================================================= */
+
+.wow-tree-canvas {
+    background: radial-gradient(circle at center, #141b2d 0%, #080c16 100%);
+    border: 3px solid #997A00;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 0 50px rgba(0, 0, 0, 0.7);
+    padding: 2.5rem 1.5rem;
+    max-width: 620px;
+    margin: 0 auto;
+    position: relative;
+    user-select: none;
+}
+
+.wow-tree-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #FFEE00;
+    text-shadow: 0 0 12px rgba(255, 238, 0, 0.5), 0 2px 4px #000;
+}
+
+.wow-tree-subtitle {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #94A3B8;
+}
+
+.wow-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4rem;
+    position: relative;
+    z-index: 2;
+}
+
+.wow-row-connector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 44px;
+    position: relative;
+    z-index: 1;
+}
+
+.wow-connector-line {
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(to bottom, #997A00, #FFEE00, #997A00);
+    box-shadow: 0 0 8px rgba(255, 238, 0, 0.5);
+    position: relative;
+}
+
+.wow-connector-line::after {
+    content: "▼";
+    position: absolute;
+    bottom: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #FFEE00;
+    font-size: 9px;
+    text-shadow: 0 0 6px #FFEE00;
+}
+
+.wow-talent-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.wow-talent-slot {
+    width: 68px;
+    height: 68px;
+    border-radius: 8px;
+    background: #0B0F19;
+    border: 2px solid #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.wow-talent-slot:hover {
+    transform: translateY(-2px) scale(1.05);
+}
+
+.wow-talent-slot.unlocked {
+    border-color: #64748B;
+}
+
+.wow-talent-slot.has-points {
+    border-color: #4ADE80;
+    box-shadow: 0 0 14px rgba(74, 222, 128, 0.4);
+}
+
+.wow-talent-slot.maxed {
+    border-color: #FFEE00;
+    box-shadow: 0 0 18px rgba(255, 238, 0, 0.7);
+}
+
+.wow-talent-slot.locked {
+    filter: grayscale(85%) opacity(0.45);
+    cursor: not-allowed;
+    border-color: #1E293B;
+}
+
+.wow-talent-icon {
+    font-size: 2rem;
+    pointer-events: none;
+}
+
+.wow-rank-badge {
+    position: absolute;
+    bottom: -8px;
+    right: -8px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    background: #050505;
+    color: #94A3B8;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 0 5px;
+    line-height: 1.3;
+    pointer-events: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+.wow-rank-badge.has-points {
+    color: #4ADE80;
+    border-color: #166534;
+}
+
+.wow-rank-badge.maxed {
+    color: #FFEE00;
+    border-color: #FFEE00;
+}
+
+.wow-talent-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #CBD5E1;
+    text-align: center;
+    max-width: 140px;
+    line-height: 1.2;
+}
+
+/* WoW Tooltip */
+.wow-tooltip {
+    display: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 290px;
+    background-color: #070A12;
+    border: 2px solid #997A00;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95), 0 0 12px rgba(153, 122, 0, 0.35);
+    z-index: 999;
+    pointer-events: none;
+    text-align: left;
+}
+
+.wow-tooltip.tooltip-right {
+    left: calc(100% + 14px);
+}
+
+.wow-tooltip.tooltip-left {
+    right: calc(100% + 14px);
+}
+
+.wow-talent-slot:hover .wow-tooltip {
+    display: block;
+}
+
+.tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #1E293B;
+    padding-bottom: 4px;
+}
+
+.tooltip-title {
+    color: #FFD700;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.tooltip-rank {
+    color: #FFFFFF;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.tooltip-desc {
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.tooltip-next-label {
+    color: #FBBF24;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.tooltip-next-desc {
+    color: #94A3B8;
+    font-size: 0.8rem;
+    line-height: 1.35;
+}
+
+.tooltip-locked {
+    color: #EF4444;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+.tooltip-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-top: 1px solid #1E293B;
+    padding-top: 6px;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    color: #4ADE80;
+}
