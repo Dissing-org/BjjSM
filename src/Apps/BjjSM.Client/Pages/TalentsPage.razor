@@ -5,14 +5,20 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h1 class="h2 fw-bold text-dark m-0">⚡ BJJ Talent Tree</h1>
-        <p class="text-muted m-0">Klassisk WoW Classic talent-progression &bull; Fri test uden pointbegrænsning</p>
+        <p class="text-muted m-0">Klassisk WoW Classic talent-progression &bull; Dynamisk Talent Builder</p>
     </div>
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
         <div class="badge px-3 py-2 fs-6 fw-bold shadow-sm" style="background-color: var(--brand-blue); color: var(--brand-yellow); border: 1px solid var(--brand-yellow);">
             <span>Investeret: @_totalPointsInvested point</span>
         </div>
-        <button class="btn btn-outline-danger fw-bold d-flex align-items-center gap-1 shadow-sm" @onclick="ResetTalents">
-            <span>↺</span> Nulstil Talenter
+        <button class="btn btn-warning fw-bold d-flex align-items-center gap-1 shadow-sm text-dark" @onclick="() => OpenCreateModal(1, 1)">
+            <span>➕</span> Opret Nyt Talent
+        </button>
+        <button class="btn btn-outline-danger fw-bold d-flex align-items-center gap-1 shadow-sm" @onclick="ResetPointsAsync">
+            <span>↺</span> Nulstil Point
+        </button>
+        <button class="btn btn-outline-secondary fw-bold d-flex align-items-center gap-1 shadow-sm" @onclick="ResetToDefaultsAsync" title="Gendan de 4 oprindelige BJJ standard talenter">
+            <span>⚙️</span> Nulstil til Standard Træ
         </button>
     </div>
 </div>
@@ -22,9 +28,9 @@
         <div class="d-flex align-items-center gap-2">
             <span class="fs-4">🥋</span>
             <div>
-                <span class="fw-bold text-dark">WoW Classic mekanik:</span>
+                <span class="fw-bold text-dark">WoW Classic mekanik &amp; Builder:</span>
                 <span class="text-muted small ms-1">
-                    <strong>Venstre-klik</strong> på et talent for at tilføje rang. <strong>Højre-klik</strong> for at fjerne rang. Prøv forskellige kombinationer af greb, sweeps og pres uden pointpulje.
+                    <strong>Venstre-klik</strong> for at tilføje rang. <strong>Højre-klik</strong> for at fjerne rang. Klik på <strong>✎</strong> for at redigere et talent, eller klik på en <strong>tom plads (+)</strong> for at designe dit eget talent.
                 </span>
             </div>
         </div>
@@ -48,6 +54,7 @@
                          @onclick="() => IncrementTalent(row1Talent)"
                          @oncontextmenu="() => DecrementTalent(row1Talent)"
                          @oncontextmenu:preventDefault="true">
+                        <button class="wow-talent-edit-btn" title="Rediger talent" @onclick="() => OpenEditModal(row1Talent)" @onclick:stopPropagation="true">✎</button>
                         <span class="wow-talent-icon">@row1Talent.Icon</span>
                         <span class="wow-rank-badge @GetRankBadgeCss(row1Talent)">
                             @row1Talent.CurrentRank/@row1Talent.MaxRank
@@ -81,6 +88,16 @@
                     <div class="wow-talent-label">@row1Talent.Name</div>
                 </div>
             }
+            else
+            {
+                <div class="wow-talent-container">
+                    <button class="wow-talent-slot empty-slot" @onclick="() => OpenCreateModal(1, 1)" title="Tilføj talent til Række 1">
+                        <span class="fs-4">➕</span>
+                        <span class="empty-slot-label">Tilføj Talent</span>
+                    </button>
+                    <div class="wow-talent-label text-muted">Ledig plads</div>
+                </div>
+            }
         }
     </div>
 
@@ -92,38 +109,39 @@
     <!-- Tier 2: 2 Talents side-by-side -->
     <div class="wow-row">
         @{
-            var row2Talents = _talents.Where(t => t.Row == 2).OrderBy(t => t.Col).ToList();
-            foreach (var talent in row2Talents)
+            // Col 1 (Venstre)
+            var col1Talent = _talents.FirstOrDefault(t => t.Row == 2 && t.Col == 1);
+            if (col1Talent is not null)
             {
-                var tooltipPosClass = talent.Col == 1 ? "tooltip-left" : "tooltip-right";
                 <div class="wow-talent-container">
-                    <div class="wow-talent-slot @GetSlotCss(talent)"
-                         @onclick="() => IncrementTalent(talent)"
-                         @oncontextmenu="() => DecrementTalent(talent)"
+                    <div class="wow-talent-slot @GetSlotCss(col1Talent)"
+                         @onclick="() => IncrementTalent(col1Talent)"
+                         @oncontextmenu="() => DecrementTalent(col1Talent)"
                          @oncontextmenu:preventDefault="true">
-                        <span class="wow-talent-icon">@talent.Icon</span>
-                        <span class="wow-rank-badge @GetRankBadgeCss(talent)">
-                            @talent.CurrentRank/@talent.MaxRank
+                        <button class="wow-talent-edit-btn" title="Rediger talent" @onclick="() => OpenEditModal(col1Talent)" @onclick:stopPropagation="true">✎</button>
+                        <span class="wow-talent-icon">@col1Talent.Icon</span>
+                        <span class="wow-rank-badge @GetRankBadgeCss(col1Talent)">
+                            @col1Talent.CurrentRank/@col1Talent.MaxRank
                         </span>
 
                         <!-- WoW Tooltip -->
-                        <div class="wow-tooltip @tooltipPosClass">
+                        <div class="wow-tooltip tooltip-left">
                             <div class="tooltip-header">
-                                <span class="tooltip-title">@talent.Name</span>
-                                <span class="tooltip-rank">Rang @talent.CurrentRank/@talent.MaxRank</span>
+                                <span class="tooltip-title">@col1Talent.Name</span>
+                                <span class="tooltip-rank">Rang @col1Talent.CurrentRank/@col1Talent.MaxRank</span>
                             </div>
-                            @if (talent.CurrentRank > 0)
+                            @if (col1Talent.CurrentRank > 0)
                             {
-                                <div class="tooltip-desc text-white mb-2">@talent.GetCurrentDescription()</div>
+                                <div class="tooltip-desc text-white mb-2">@col1Talent.GetCurrentDescription()</div>
                             }
-                            @if (!talent.IsMaxed)
+                            @if (!col1Talent.IsMaxed)
                             {
                                 <div class="tooltip-next-label">Næste rang:</div>
-                                <div class="tooltip-next-desc mb-2">@talent.GetNextDescription()</div>
+                                <div class="tooltip-next-desc mb-2">@col1Talent.GetNextDescription()</div>
                             }
-                            @if (!CanIncrement(talent) && !talent.IsMaxed)
+                            @if (!CanIncrement(col1Talent) && !col1Talent.IsMaxed)
                             {
-                                <div class="tooltip-locked">⚠️ Kræver @talent.RequiredPointsInTree point i BJJ Talenter</div>
+                                <div class="tooltip-locked">⚠️ Kræver @col1Talent.RequiredPointsInTree point i BJJ Talenter</div>
                             }
                             <div class="tooltip-footer">
                                 <span>Venstre-klik for at lære</span>
@@ -131,7 +149,71 @@
                             </div>
                         </div>
                     </div>
-                    <div class="wow-talent-label">@talent.Name</div>
+                    <div class="wow-talent-label">@col1Talent.Name</div>
+                </div>
+            }
+            else
+            {
+                <div class="wow-talent-container">
+                    <button class="wow-talent-slot empty-slot" @onclick="() => OpenCreateModal(2, 1)" title="Tilføj talent til Række 2 (Venstre)">
+                        <span class="fs-4">➕</span>
+                        <span class="empty-slot-label">Tilføj Talent</span>
+                    </button>
+                    <div class="wow-talent-label text-muted">Ledig plads (V)</div>
+                </div>
+            }
+
+            // Col 2 (Højre)
+            var col2Talent = _talents.FirstOrDefault(t => t.Row == 2 && t.Col == 2);
+            if (col2Talent is not null)
+            {
+                <div class="wow-talent-container">
+                    <div class="wow-talent-slot @GetSlotCss(col2Talent)"
+                         @onclick="() => IncrementTalent(col2Talent)"
+                         @oncontextmenu="() => DecrementTalent(col2Talent)"
+                         @oncontextmenu:preventDefault="true">
+                        <button class="wow-talent-edit-btn" title="Rediger talent" @onclick="() => OpenEditModal(col2Talent)" @onclick:stopPropagation="true">✎</button>
+                        <span class="wow-talent-icon">@col2Talent.Icon</span>
+                        <span class="wow-rank-badge @GetRankBadgeCss(col2Talent)">
+                            @col2Talent.CurrentRank/@col2Talent.MaxRank
+                        </span>
+
+                        <!-- WoW Tooltip -->
+                        <div class="wow-tooltip tooltip-right">
+                            <div class="tooltip-header">
+                                <span class="tooltip-title">@col2Talent.Name</span>
+                                <span class="tooltip-rank">Rang @col2Talent.CurrentRank/@col2Talent.MaxRank</span>
+                            </div>
+                            @if (col2Talent.CurrentRank > 0)
+                            {
+                                <div class="tooltip-desc text-white mb-2">@col2Talent.GetCurrentDescription()</div>
+                            }
+                            @if (!col2Talent.IsMaxed)
+                            {
+                                <div class="tooltip-next-label">Næste rang:</div>
+                                <div class="tooltip-next-desc mb-2">@col2Talent.GetNextDescription()</div>
+                            }
+                            @if (!CanIncrement(col2Talent) && !col2Talent.IsMaxed)
+                            {
+                                <div class="tooltip-locked">⚠️ Kræver @col2Talent.RequiredPointsInTree point i BJJ Talenter</div>
+                            }
+                            <div class="tooltip-footer">
+                                <span>Venstre-klik for at lære</span>
+                                <span>Højre-klik for at fjerne</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wow-talent-label">@col2Talent.Name</div>
+                </div>
+            }
+            else
+            {
+                <div class="wow-talent-container">
+                    <button class="wow-talent-slot empty-slot" @onclick="() => OpenCreateModal(2, 2)" title="Tilføj talent til Række 2 (Højre)">
+                        <span class="fs-4">➕</span>
+                        <span class="empty-slot-label">Tilføj Talent</span>
+                    </button>
+                    <div class="wow-talent-label text-muted">Ledig plads (H)</div>
                 </div>
             }
         }
@@ -153,6 +235,7 @@
                          @onclick="() => IncrementTalent(row3Talent)"
                          @oncontextmenu="() => DecrementTalent(row3Talent)"
                          @oncontextmenu:preventDefault="true">
+                        <button class="wow-talent-edit-btn" title="Rediger talent" @onclick="() => OpenEditModal(row3Talent)" @onclick:stopPropagation="true">✎</button>
                         <span class="wow-talent-icon">@row3Talent.Icon</span>
                         <span class="wow-rank-badge @GetRankBadgeCss(row3Talent)">
                             @row3Talent.CurrentRank/@row3Talent.MaxRank
@@ -186,6 +269,155 @@
                     <div class="wow-talent-label">@row3Talent.Name</div>
                 </div>
             }
+            else
+            {
+                <div class="wow-talent-container">
+                    <button class="wow-talent-slot empty-slot" @onclick="() => OpenCreateModal(3, 1)" title="Tilføj talent til Række 3">
+                        <span class="fs-4">➕</span>
+                        <span class="empty-slot-label">Tilføj Talent</span>
+                    </button>
+                    <div class="wow-talent-label text-muted">Ledig plads</div>
+                </div>
+            }
         }
     </div>
 </div>
+
+<!-- Create / Edit Modal -->
+@if (_showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.75); z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content text-white" style="background: #0B0F19; border: 2px solid #997A00; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95); border-radius: 10px;">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold text-warning d-flex align-items-center gap-2">
+                        <span>@(_formModel.IsNew ? "➕ Opret Nyt Talent" : "✎ Rediger Talent")</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    @if (!string.IsNullOrEmpty(_formError))
+                    {
+                        <div class="alert alert-danger py-2 mb-3">@_formError</div>
+                    }
+
+                    <div class="row g-3">
+                        <!-- Row Selection -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-warning small">Række Placering</label>
+                            <select class="form-select bg-dark text-white border-secondary"
+                                    value="@_formModel.Row"
+                                    @onchange="OnRowSelected">
+                                <option value="1">Række 1 (Top &bull; Kræver 0 point)</option>
+                                <option value="2">Række 2 (Midt &bull; Kræver 3 point)</option>
+                                <option value="3">Række 3 (Bund &bull; Kræver 5 point)</option>
+                            </select>
+                        </div>
+
+                        <!-- Column Selection (Row 2 only) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-warning small">Kolonne / Side</label>
+                            @if (_formModel.Row == 2)
+                            {
+                                <select class="form-select bg-dark text-white border-secondary" @bind="_formModel.Col">
+                                    <option value="1">Venstre side (Kolonne 1)</option>
+                                    <option value="2">Højre side (Kolonne 2)</option>
+                                </select>
+                            }
+                            else
+                            {
+                                <input type="text" class="form-control bg-dark text-muted border-secondary" value="Centreret (Standard)" disabled />
+                            }
+                        </div>
+
+                        <!-- Talent Name -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-warning small">Talent Navn</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary"
+                                   @bind="_formModel.Name"
+                                   placeholder="F.eks. Collar Drag Mastery, De La Riva Sweep..." />
+                        </div>
+
+                        <!-- Icon Chooser -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-warning small">Vælg Ikon (Emoji)</label>
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                                @foreach (var emoji in new[] { "🥋", "⚡", "🛡️", "👑", "🗡️", "🦅", "🔥", "🐍", "🥊", "⛓️", "🤼", "🪢" })
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm @(_formModel.Icon == emoji ? "btn-warning" : "btn-outline-secondary") fs-5 p-1 px-2"
+                                            @onclick="() => SetFormIcon(emoji)">
+                                        @emoji
+                                    </button>
+                                }
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="small text-muted">Eller brugerdefineret:</span>
+                                <input type="text" class="form-control bg-dark text-white border-secondary"
+                                       style="max-width: 90px; text-align: center; font-size: 1.2rem;"
+                                       @bind="_formModel.Icon"
+                                       maxlength="4" />
+                            </div>
+                        </div>
+
+                        <!-- Description Format -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-warning small">Beskrivelsesskabelon</label>
+                            <textarea class="form-control bg-dark text-white border-secondary"
+                                      rows="2"
+                                      @bind="_formModel.DescriptionFormat"
+                                      placeholder="Øger submission-effektivitet med {0}%."></textarea>
+                            <div class="form-text text-muted small">Brug <code>{0}</code> som pladsholder for rangværdien på det aktuelle niveau.</div>
+                        </div>
+
+                        <!-- Max Rank -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-warning small">Maks Rang</label>
+                            <select class="form-select bg-dark text-white border-secondary"
+                                    value="@_formModel.MaxRank"
+                                    @onchange="OnMaxRankSelected">
+                                <option value="1">1 rang</option>
+                                <option value="2">2 range</option>
+                                <option value="3">3 range</option>
+                                <option value="4">4 range</option>
+                                <option value="5">5 range</option>
+                            </select>
+                        </div>
+
+                        <!-- Comma-separated rank values -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-warning small">Rangværdier ({0})</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary"
+                                   @bind="_formModel.RankValuesRaw"
+                                   placeholder="F.eks. 5, 10, 15" />
+                            <div class="form-text text-muted small">Adskil med komma.</div>
+                        </div>
+
+                        <!-- Required Points in tree -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-warning small">Pointkrav i Træet</label>
+                            <input type="number" class="form-control bg-dark text-white border-secondary"
+                                   @bind="_formModel.RequiredPointsInTree"
+                                   min="0" max="50" />
+                            <div class="form-text text-muted small">Tidligere investerede point.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary d-flex justify-content-between">
+                    <div>
+                        @if (!_formModel.IsNew)
+                        {
+                            <button type="button" class="btn btn-outline-danger fw-bold d-flex align-items-center gap-1" @onclick="DeleteTalentAsync">
+                                <span>🗑️</span> Slet Talent
+                            </button>
+                        }
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">Annuller</button>
+                        <button type="button" class="btn btn-warning fw-bold text-dark px-4" @onclick="SaveTalentAsync">Gem Talent</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
