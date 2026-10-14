@@ -21,7 +21,7 @@ RUN dotnet publish src/Apps/BjjSM.Api/BjjSM.Api.csproj -c Release -o /app/publis
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data /app/data/logs
 
 COPY --from=build /app/publish .
 
