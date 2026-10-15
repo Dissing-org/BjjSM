@@ -10,17 +10,24 @@ public partial class TalentsPage : ComponentBase
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
     private const string LocalStorageKey = "bjjsm_talents_basics_v3";
+    private const string AchievementsStorageKey = "bjjsm_achievements_v1";
 
     private List<TalentNode> _talents = [];
+    private List<Achievement> _achievements = [];
+    private Achievement? _activeToast;
     private bool _showModal;
+    private bool _showAchievementsModal;
     private TalentFormModel _formModel = new();
     private string? _formError;
 
     private int _totalPointsInvested => _talents.Sum(t => t.CurrentRank);
+    private int _unlockedAchievementCount => _achievements.Count(a => a.IsUnlocked);
+    private int _totalAchievementPoints => _achievements.Where(a => a.IsUnlocked).Sum(a => a.Points);
 
     protected override async Task OnInitializedAsync()
     {
         await LoadTalentsAsync();
+        await LoadAchievementsAsync();
     }
 
     private async Task LoadTalentsAsync()
@@ -52,6 +59,51 @@ public partial class TalentsPage : ComponentBase
         {
             var json = JsonSerializer.Serialize(_talents);
             await JS.InvokeVoidAsync("localStorage.setItem", LocalStorageKey, json);
+        }
+        catch
+        {
+            // Ignore storage write issues
+        }
+    }
+
+    private async Task LoadAchievementsAsync()
+    {
+        var catalog = AchievementEngine.GetDefaultCatalog();
+        try
+        {
+            var json = await JS.InvokeAsync<string?>("localStorage.getItem", AchievementsStorageKey);
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                var loaded = JsonSerializer.Deserialize<List<Achievement>>(json);
+                if (loaded is { Count: > 0 })
+                {
+                    foreach (var cat in catalog)
+                    {
+                        var match = loaded.FirstOrDefault(l => l.Id == cat.Id);
+                        if (match != null && match.IsUnlocked)
+                        {
+                            cat.UnlockedAt = match.UnlockedAt;
+                        }
+                    }
+                    _achievements = catalog;
+                    return;
+                }
+            }
+        }
+        catch
+        {
+            // Fallback to default catalog
+        }
+
+        _achievements = catalog;
+    }
+
+    private async Task SaveAchievementsAsync()
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(_achievements);
+            await JS.InvokeVoidAsync("localStorage.setItem", AchievementsStorageKey, json);
         }
         catch
         {
@@ -447,7 +499,13 @@ public partial class TalentsPage : ComponentBase
         if (CanIncrement(talent))
         {
             talent.CurrentRank++;
+            var newlyUnlocked = AchievementEngine.EvaluateTalents(_achievements, _talents, talent);
             await SaveToLocalStorageAsync();
+            if (newlyUnlocked.Count > 0)
+            {
+                await SaveAchievementsAsync();
+                _activeToast = newlyUnlocked.First();
+            }
             StateHasChanged();
         }
     }
@@ -460,6 +518,16 @@ public partial class TalentsPage : ComponentBase
             await SaveToLocalStorageAsync();
             StateHasChanged();
         }
+    }
+
+    private void OpenAchievementsModal()
+    {
+        _showAchievementsModal = true;
+    }
+
+    private void CloseAchievementsModal()
+    {
+        _showAchievementsModal = false;
     }
 
     private string GetSlotCss(TalentNode talent)

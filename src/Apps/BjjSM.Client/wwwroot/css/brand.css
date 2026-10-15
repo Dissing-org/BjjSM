@@ -542,3 +542,194 @@ html, body {
         z-index: 2000;
     }
 }
+
+/* WoW Classic Achievement Banner & Trophies */
+@keyframes wowSlideDown {
+    0% {
+        transform: translate(-50%, -100px);
+        opacity: 0;
+    }
+    100% {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
+
+.wow-achievement-toast {
+    position: fixed;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #070A12;
+    border: 3px solid #FFEE00;
+    border-radius: 10px;
+    padding: 12px 20px;
+    min-width: 380px;
+    max-width: 90vw;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.95), 0 0 25px rgba(255, 238, 0, 0.45);
+    animation: wowSlideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    cursor: pointer;
+    user-select: none;
+}
+
+.wow-achievement-shield {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+}
+
+.wow-shield-icon {
+    font-size: 2.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+.wow-achievement-points {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -40%);
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #FFEE00;
+    text-shadow: 0 1px 2px #000, 0 0 4px #000;
+}
+
+.wow-achievement-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.wow-achievement-category-header {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #F59E0B;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.wow-achievement-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #FFD700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
+    line-height: 1.2;
+    margin: 2px 0;
+}
+
+.wow-achievement-icon {
+    font-size: 1.15rem;
+}
+
+.wow-achievement-description {
+    font-size: 0.82rem;
+    color: #CBD5E1;
+    line-height: 1.3;
+}
+
+.wow-achievement-close-btn {
+    background: transparent;
+    border: none;
+    color: #94A3B8;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+    margin-left: 6px;
+    transition: color 0.15s ease;
+}
+
+.wow-achievement-close-btn:hover {
+    color: #FFEE00;
+}
+
+/* Achievement Showcase Modal & Trophy Cards */
+.trophy-card {
+    background: #0B0F19;
+    border: 2px solid #334155;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+.trophy-card.unlocked {
+    border-color: #FFEE00;
+    background: radial-gradient(circle at top right, rgba(255, 238, 0, 0.08), #0B0F19 75%);
+    box-shadow: 0 4px 15px rgba(255, 238, 0, 0.15);
+}
+
+.trophy-card.locked {
+    opacity: 0.6;
+    border-color: #1E293B;
+    filter: grayscale(80%);
+}
+
+.trophy-card.locked:hover {
+    opacity: 0.85;
+    filter: grayscale(40%);
+}
+
+.trophy-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.trophy-card-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #FFFFFF;
+}
+
+.trophy-card.unlocked .trophy-card-title {
+    color: #FFD700;
+}
+
+.trophy-points-badge {
+    background: rgba(255, 238, 0, 0.15);
+    color: #FFEE00;
+    border: 1px solid #FFEE00;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.trophy-card.locked .trophy-points-badge {
+    background: rgba(148, 163, 184, 0.1);
+    color: #94A3B8;
+    border-color: #475569;
+}
+
+.trophy-card-desc {
+    font-size: 0.85rem;
+    color: #CBD5E1;
+    margin-bottom: 8px;
+    line-height: 1.35;
+}
+
+.trophy-card-footer {
+    font-size: 0.75rem;
+    color: #4ADE80;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.trophy-card.locked .trophy-card-footer {
+    color: #94A3B8;
+}
+

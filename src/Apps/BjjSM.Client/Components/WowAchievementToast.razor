@@ -1,0 +1,126 @@
+@using BjjSM.Client.Models
+@inject IJSRuntime JS
+@implements IDisposable
+
+@if (Current is not null)
+{
+    <div class="wow-achievement-toast" @onclick="DismissAsync" role="alert" aria-live="assertive" title="Klik for at lukke">
+        <div class="wow-achievement-shield">
+            <span class="wow-shield-icon">🛡️</span>
+            <span class="wow-achievement-points">@Current.Points</span>
+        </div>
+        <div class="wow-achievement-content">
+            <div class="wow-achievement-category-header">ACHIEVEMENT UNLOCKED!</div>
+            <div class="wow-achievement-title">
+                <span class="wow-achievement-icon">@Current.Icon</span>
+                <span>@Current.Title</span>
+            </div>
+            <div class="wow-achievement-description">@Current.Description</div>
+        </div>
+        <button type="button" class="wow-achievement-close-btn" @onclick="DismissAsync" @onclick:stopPropagation="true" aria-label="Luk">&times;</button>
+    </div>
+}
+
+@code {
+    [Parameter] public Achievement? Current { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private string? _lastShownId;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Current is not null && Current.Id != _lastShownId)
+        {
+            _lastShownId = Current.Id;
+            _cts?.Cancel();
+            _cts = new CancellationTokenSource();
+            var token = _cts.Token;
+
+            await PlayFanfareAsync();
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(5000, token);
+                    if (!token.IsCancellationRequested)
+                    {
+                        await InvokeAsync(DismissAsync);
+                    }
+                }
+                catch (TaskCanceledException) { }
+            });
+        }
+        else if (Current is null)
+        {
+            _lastShownId = null;
+            _cts?.Cancel();
+        }
+    }
+
+    private async Task PlayFanfareAsync()
+    {
+        try
+        {
+            const string soundScript = @"
+                (function() {
+                    try {
+                        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+                        if (!AudioCtx) return;
+                        var ctx = new AudioCtx();
+                        if (ctx.state === 'suspended') {
+                            ctx.resume();
+                        }
+                        var now = ctx.currentTime;
+                        var notes = [
+                            { f: 523.25, start: 0.00, dur: 0.15 },
+                            { f: 659.25, start: 0.12, dur: 0.15 },
+                            { f: 783.99, start: 0.24, dur: 0.20 },
+                            { f: 1046.50, start: 0.40, dur: 0.70 }
+                        ];
+                        notes.forEach(function(n) {
+                            var osc = ctx.createOscillator();
+                            var gain = ctx.createGain();
+                            osc.type = 'triangle';
+                            osc.frequency.setValueAtTime(n.f, now + n.start);
+
+                            gain.gain.setValueAtTime(0.0001, now + n.start);
+                            gain.gain.linearRampToValueAtTime(0.35, now + n.start + 0.03);
+                            gain.gain.exponentialRampToValueAtTime(0.0001, now + n.start + n.dur);
+
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+
+                            osc.start(now + n.start);
+                            osc.stop(now + n.start + n.dur);
+                        });
+                    } catch (e) {
+                        console.warn('Audio synthesis unavailable:', e);
+                    }
+                })();
+            ";
+            await JS.InvokeVoidAsync("eval", soundScript);
+        }
+        catch
+        {
+            // Ignore audio playback failures in test/restricted environments
+        }
+    }
+
+    private async Task DismissAsync()
+    {
+        _cts?.Cancel();
+        _lastShownId = null;
+        if (OnDismiss.HasDelegate)
+        {
+            await OnDismiss.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

@@ -2,12 +2,17 @@
 
 <PageTitle>BjjSM - Basics Talent Tree</PageTitle>
 
+<WowAchievementToast Current="@_activeToast" OnDismiss="() => _activeToast = null" />
+
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h1 class="h2 fw-bold text-dark m-0">⚡ BJJ Talent Tree</h1>
         <p class="text-muted m-0">Klassisk WoW Classic talent-progression &bull; Dynamisk Talent Builder</p>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button class="btn btn-outline-warning fw-bold d-flex align-items-center gap-1 shadow-sm" @onclick="OpenAchievementsModal">
+            <span>🏆</span> Trofæer (@_unlockedAchievementCount/@_achievements.Count)
+        </button>
         <div class="badge px-3 py-2 fs-6 fw-bold shadow-sm" style="background-color: var(--brand-blue); color: var(--brand-yellow); border: 1px solid var(--brand-yellow);">
             <span>Investeret: @_totalPointsInvested point</span>
         </div>
@@ -363,3 +368,67 @@
         </div>
     </div>
 }
+
+<!-- Achievements Showcase Modal -->
+@if (_showAchievementsModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.8); z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content text-white" style="background: #070A12; border: 2px solid #FFEE00; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95); border-radius: 10px;">
+                <div class="modal-header border-secondary">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4">🏆</span>
+                        <div>
+                            <h5 class="modal-title fw-bold text-warning m-0">BJJ Trofæer &amp; Præstationer</h5>
+                            <span class="text-muted small">Lås op for bedrifter ved at mestre BJJ Fundamentals</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-warning text-dark fw-bold px-3 py-2">
+                            @_totalAchievementPoints point (@_unlockedAchievementCount/@_achievements.Count)
+                        </span>
+                        <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseAchievementsModal"></button>
+                    </div>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        @foreach (var achievement in _achievements)
+                        {
+                            <div class="col-md-6">
+                                <div class="trophy-card @(achievement.IsUnlocked ? "unlocked" : "locked") h-100">
+                                    <div class="trophy-card-header">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fs-3">@achievement.Icon</span>
+                                            <div>
+                                                <div class="trophy-card-title">@achievement.Title</div>
+                                                <span class="badge bg-dark border border-secondary text-muted small" style="font-size: 0.65rem;">@achievement.Category</span>
+                                            </div>
+                                        </div>
+                                        <span class="trophy-points-badge">+@achievement.Points pts</span>
+                                    </div>
+                                    <div class="trophy-card-desc">
+                                        @achievement.Description
+                                    </div>
+                                    <div class="trophy-card-footer">
+                                        @if (achievement.IsUnlocked)
+                                        {
+                                            <span>⭐ Låst op: @achievement.UnlockedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>🔒 Låst</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-warning fw-bold px-4" @onclick="CloseAchievementsModal">Luk</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
