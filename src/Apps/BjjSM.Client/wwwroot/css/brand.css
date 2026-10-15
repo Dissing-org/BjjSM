@@ -84,7 +84,7 @@ html, body {
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 0 50px rgba(0, 0, 0, 0.7);
     padding: 2.5rem 1.5rem;
-    max-width: 620px;
+    max-width: 680px;
     margin: 0 auto;
     position: relative;
     user-select: none;
@@ -109,17 +109,29 @@ html, body {
 .wow-row {
     display: flex;
     justify-content: center;
-    align-items: center;
-    gap: 4rem;
+    align-items: flex-start;
+    gap: 2.5rem;
     position: relative;
     z-index: 2;
+}
+
+.wow-row.wow-row-3col {
+    gap: 2rem;
+}
+
+.wow-row.wow-row-2col {
+    gap: 4.5rem;
+}
+
+.wow-row.wow-row-1col {
+    gap: 0;
 }
 
 .wow-row-connector {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 44px;
+    height: 38px;
     position: relative;
     z-index: 1;
 }

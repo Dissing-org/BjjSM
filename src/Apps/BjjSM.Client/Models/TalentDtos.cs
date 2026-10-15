@@ -67,13 +67,22 @@ public class TalentFormModel
     public TalentNode ToTalentNode(int existingCurrentRank = 0)
     {
         var parsedRankValues = ParseRankValues(RankValuesRaw, MaxRank);
+        var row = Math.Clamp(Row, 1, 6);
+        var col = row switch
+        {
+            1 => Math.Clamp(Col, 1, 2),
+            >= 2 and <= 4 => Math.Clamp(Col, 1, 3),
+            5 or 6 => 2,
+            _ => Math.Clamp(Col, 1, 3)
+        };
+
         return new TalentNode
         {
             Id = string.IsNullOrWhiteSpace(Id) ? Guid.NewGuid().ToString("N")[..8] : Id,
             Name = Name?.Trim() ?? string.Empty,
             Icon = string.IsNullOrWhiteSpace(Icon) ? "🥋" : Icon.Trim(),
-            Row = Row,
-            Col = Row == 2 ? Math.Clamp(Col, 1, 2) : 1,
+            Row = row,
+            Col = col,
             MaxRank = Math.Clamp(MaxRank, 1, 5),
             CurrentRank = Math.Min(existingCurrentRank, Math.Clamp(MaxRank, 1, 5)),
             DescriptionFormat = DescriptionFormat?.Trim() ?? string.Empty,

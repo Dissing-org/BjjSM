@@ -1,6 +1,6 @@
 @page "/talents"
 
-<PageTitle>BjjSM - BJJ Talent Tree (WoW Classic)</PageTitle>
+<PageTitle>BjjSM - Basics Talent Tree</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
@@ -17,7 +17,7 @@
         <button class="btn btn-outline-danger fw-bold d-flex align-items-center gap-1 shadow-sm" @onclick="ResetPointsAsync">
             <span>↺</span> Nulstil Point
         </button>
-        <button class="btn btn-outline-secondary fw-bold d-flex align-items-center gap-1 shadow-sm" @onclick="ResetToDefaultsAsync" title="Gendan de 4 oprindelige BJJ standard talenter">
+        <button class="btn btn-outline-secondary fw-bold d-flex align-items-center gap-1 shadow-sm" @onclick="ResetToDefaultsAsync" title="Gendan de 12 Basics BJJ standard talenter">
             <span>⚙️</span> Nulstil til Standard Træ
         </button>
     </div>
@@ -39,45 +39,46 @@
 
 <div class="wow-tree-canvas shadow-lg">
     <div class="wow-tree-header text-center mb-4">
-        <h3 class="wow-tree-title m-0">BJJ COMBAT MASTERY</h3>
-        <span class="wow-tree-subtitle">3-Tier Specialization Tree</span>
+        <h3 class="wow-tree-title m-0">BASICS</h3>
+        <span class="wow-tree-subtitle">Fundamental BJJ Positional &amp; Combat Progression</span>
     </div>
 
-    <!-- Tier 1: 1 Talent centered -->
-    <div class="wow-row">
-        @{
-            var row1Talent = _talents.FirstOrDefault(t => t.Row == 1);
-            if (row1Talent is not null)
+    @{
+        RenderFragment RenderSlot(int row, int col) => __builder =>
+        {
+            var talent = _talents.FirstOrDefault(t => t.Row == row && t.Col == col);
+            if (talent is not null)
             {
+                var tooltipClass = col == 1 ? "tooltip-right" : (col == 3 ? "tooltip-left" : (row >= 5 ? "tooltip-right" : "tooltip-left"));
                 <div class="wow-talent-container">
-                    <div class="wow-talent-slot @GetSlotCss(row1Talent)"
-                         @onclick="() => IncrementTalent(row1Talent)"
-                         @oncontextmenu="() => DecrementTalent(row1Talent)"
+                    <div class="wow-talent-slot @GetSlotCss(talent)"
+                         @onclick="() => IncrementTalent(talent)"
+                         @oncontextmenu="() => DecrementTalent(talent)"
                          @oncontextmenu:preventDefault="true">
-                        <button class="wow-talent-edit-btn" title="Rediger talent" @onclick="() => OpenEditModal(row1Talent)" @onclick:stopPropagation="true">✎</button>
-                        <span class="wow-talent-icon">@row1Talent.Icon</span>
-                        <span class="wow-rank-badge @GetRankBadgeCss(row1Talent)">
-                            @row1Talent.CurrentRank/@row1Talent.MaxRank
+                        <button class="wow-talent-edit-btn" title="Rediger talent" @onclick="() => OpenEditModal(talent)" @onclick:stopPropagation="true">✎</button>
+                        <span class="wow-talent-icon">@talent.Icon</span>
+                        <span class="wow-rank-badge @GetRankBadgeCss(talent)">
+                            @talent.CurrentRank/@talent.MaxRank
                         </span>
 
                         <!-- WoW Tooltip -->
-                        <div class="wow-tooltip tooltip-right">
+                        <div class="wow-tooltip @tooltipClass">
                             <div class="tooltip-header">
-                                <span class="tooltip-title">@row1Talent.Name</span>
-                                <span class="tooltip-rank">Rang @row1Talent.CurrentRank/@row1Talent.MaxRank</span>
+                                <span class="tooltip-title">@talent.Name</span>
+                                <span class="tooltip-rank">Rang @talent.CurrentRank/@talent.MaxRank</span>
                             </div>
-                            @if (row1Talent.CurrentRank > 0)
+                            @if (talent.CurrentRank > 0)
                             {
-                                <div class="tooltip-desc text-white mb-2">@row1Talent.GetCurrentDescription()</div>
+                                <div class="tooltip-desc text-white mb-2">@talent.GetCurrentDescription()</div>
                             }
-                            @if (!row1Talent.IsMaxed)
+                            @if (!talent.IsMaxed)
                             {
                                 <div class="tooltip-next-label">Næste rang:</div>
-                                <div class="tooltip-next-desc mb-2">@row1Talent.GetNextDescription()</div>
+                                <div class="tooltip-next-desc mb-2">@talent.GetNextDescription()</div>
                             }
-                            @if (!CanIncrement(row1Talent) && !row1Talent.IsMaxed)
+                            @if (!CanIncrement(talent) && !talent.IsMaxed)
                             {
-                                <div class="tooltip-locked">⚠️ Kræver @row1Talent.RequiredPointsInTree point i BJJ Talenter</div>
+                                <div class="tooltip-locked">⚠️ Kræver @talent.RequiredPointsInTree point i BJJ Talenter</div>
                             }
                             <div class="tooltip-footer">
                                 <span>Venstre-klik for at lære</span>
@@ -85,201 +86,82 @@
                             </div>
                         </div>
                     </div>
-                    <div class="wow-talent-label">@row1Talent.Name</div>
+                    <div class="wow-talent-label">@talent.Name</div>
                 </div>
             }
             else
             {
                 <div class="wow-talent-container">
-                    <button class="wow-talent-slot empty-slot" @onclick="() => OpenCreateModal(1, 1)" title="Tilføj talent til Række 1">
+                    <button class="wow-talent-slot empty-slot" @onclick="() => OpenCreateModal(row, col)" title="@($"Tilføj talent til Række {row} (Kolonne {col})")">
                         <span class="fs-4">➕</span>
                         <span class="empty-slot-label">Tilføj Talent</span>
                     </button>
                     <div class="wow-talent-label text-muted">Ledig plads</div>
                 </div>
             }
-        }
+        };
+    }
+
+    <!-- Row 1: 2 Talents (Col 1, Col 2) -->
+    <div class="wow-row wow-row-2col">
+        @RenderSlot(1, 1)
+        @RenderSlot(1, 2)
     </div>
 
-    <!-- Connector Tier 1 -> Tier 2 -->
+    <!-- Connector Row 1 -> Row 2 -->
     <div class="wow-row-connector">
         <div class="wow-connector-line"></div>
     </div>
 
-    <!-- Tier 2: 2 Talents side-by-side -->
-    <div class="wow-row">
-        @{
-            // Col 1 (Venstre)
-            var col1Talent = _talents.FirstOrDefault(t => t.Row == 2 && t.Col == 1);
-            if (col1Talent is not null)
-            {
-                <div class="wow-talent-container">
-                    <div class="wow-talent-slot @GetSlotCss(col1Talent)"
-                         @onclick="() => IncrementTalent(col1Talent)"
-                         @oncontextmenu="() => DecrementTalent(col1Talent)"
-                         @oncontextmenu:preventDefault="true">
-                        <button class="wow-talent-edit-btn" title="Rediger talent" @onclick="() => OpenEditModal(col1Talent)" @onclick:stopPropagation="true">✎</button>
-                        <span class="wow-talent-icon">@col1Talent.Icon</span>
-                        <span class="wow-rank-badge @GetRankBadgeCss(col1Talent)">
-                            @col1Talent.CurrentRank/@col1Talent.MaxRank
-                        </span>
-
-                        <!-- WoW Tooltip -->
-                        <div class="wow-tooltip tooltip-left">
-                            <div class="tooltip-header">
-                                <span class="tooltip-title">@col1Talent.Name</span>
-                                <span class="tooltip-rank">Rang @col1Talent.CurrentRank/@col1Talent.MaxRank</span>
-                            </div>
-                            @if (col1Talent.CurrentRank > 0)
-                            {
-                                <div class="tooltip-desc text-white mb-2">@col1Talent.GetCurrentDescription()</div>
-                            }
-                            @if (!col1Talent.IsMaxed)
-                            {
-                                <div class="tooltip-next-label">Næste rang:</div>
-                                <div class="tooltip-next-desc mb-2">@col1Talent.GetNextDescription()</div>
-                            }
-                            @if (!CanIncrement(col1Talent) && !col1Talent.IsMaxed)
-                            {
-                                <div class="tooltip-locked">⚠️ Kræver @col1Talent.RequiredPointsInTree point i BJJ Talenter</div>
-                            }
-                            <div class="tooltip-footer">
-                                <span>Venstre-klik for at lære</span>
-                                <span>Højre-klik for at fjerne</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="wow-talent-label">@col1Talent.Name</div>
-                </div>
-            }
-            else
-            {
-                <div class="wow-talent-container">
-                    <button class="wow-talent-slot empty-slot" @onclick="() => OpenCreateModal(2, 1)" title="Tilføj talent til Række 2 (Venstre)">
-                        <span class="fs-4">➕</span>
-                        <span class="empty-slot-label">Tilføj Talent</span>
-                    </button>
-                    <div class="wow-talent-label text-muted">Ledig plads (V)</div>
-                </div>
-            }
-
-            // Col 2 (Højre)
-            var col2Talent = _talents.FirstOrDefault(t => t.Row == 2 && t.Col == 2);
-            if (col2Talent is not null)
-            {
-                <div class="wow-talent-container">
-                    <div class="wow-talent-slot @GetSlotCss(col2Talent)"
-                         @onclick="() => IncrementTalent(col2Talent)"
-                         @oncontextmenu="() => DecrementTalent(col2Talent)"
-                         @oncontextmenu:preventDefault="true">
-                        <button class="wow-talent-edit-btn" title="Rediger talent" @onclick="() => OpenEditModal(col2Talent)" @onclick:stopPropagation="true">✎</button>
-                        <span class="wow-talent-icon">@col2Talent.Icon</span>
-                        <span class="wow-rank-badge @GetRankBadgeCss(col2Talent)">
-                            @col2Talent.CurrentRank/@col2Talent.MaxRank
-                        </span>
-
-                        <!-- WoW Tooltip -->
-                        <div class="wow-tooltip tooltip-right">
-                            <div class="tooltip-header">
-                                <span class="tooltip-title">@col2Talent.Name</span>
-                                <span class="tooltip-rank">Rang @col2Talent.CurrentRank/@col2Talent.MaxRank</span>
-                            </div>
-                            @if (col2Talent.CurrentRank > 0)
-                            {
-                                <div class="tooltip-desc text-white mb-2">@col2Talent.GetCurrentDescription()</div>
-                            }
-                            @if (!col2Talent.IsMaxed)
-                            {
-                                <div class="tooltip-next-label">Næste rang:</div>
-                                <div class="tooltip-next-desc mb-2">@col2Talent.GetNextDescription()</div>
-                            }
-                            @if (!CanIncrement(col2Talent) && !col2Talent.IsMaxed)
-                            {
-                                <div class="tooltip-locked">⚠️ Kræver @col2Talent.RequiredPointsInTree point i BJJ Talenter</div>
-                            }
-                            <div class="tooltip-footer">
-                                <span>Venstre-klik for at lære</span>
-                                <span>Højre-klik for at fjerne</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="wow-talent-label">@col2Talent.Name</div>
-                </div>
-            }
-            else
-            {
-                <div class="wow-talent-container">
-                    <button class="wow-talent-slot empty-slot" @onclick="() => OpenCreateModal(2, 2)" title="Tilføj talent til Række 2 (Højre)">
-                        <span class="fs-4">➕</span>
-                        <span class="empty-slot-label">Tilføj Talent</span>
-                    </button>
-                    <div class="wow-talent-label text-muted">Ledig plads (H)</div>
-                </div>
-            }
-        }
+    <!-- Row 2: 3 Talents (Col 1, Col 2, Col 3) -->
+    <div class="wow-row wow-row-3col">
+        @RenderSlot(2, 1)
+        @RenderSlot(2, 2)
+        @RenderSlot(2, 3)
     </div>
 
-    <!-- Connector Tier 2 -> Tier 3 -->
+    <!-- Connector Row 2 -> Row 3 -->
     <div class="wow-row-connector">
         <div class="wow-connector-line"></div>
     </div>
 
-    <!-- Tier 3: 1 Talent centered -->
-    <div class="wow-row">
-        @{
-            var row3Talent = _talents.FirstOrDefault(t => t.Row == 3);
-            if (row3Talent is not null)
-            {
-                <div class="wow-talent-container">
-                    <div class="wow-talent-slot @GetSlotCss(row3Talent)"
-                         @onclick="() => IncrementTalent(row3Talent)"
-                         @oncontextmenu="() => DecrementTalent(row3Talent)"
-                         @oncontextmenu:preventDefault="true">
-                        <button class="wow-talent-edit-btn" title="Rediger talent" @onclick="() => OpenEditModal(row3Talent)" @onclick:stopPropagation="true">✎</button>
-                        <span class="wow-talent-icon">@row3Talent.Icon</span>
-                        <span class="wow-rank-badge @GetRankBadgeCss(row3Talent)">
-                            @row3Talent.CurrentRank/@row3Talent.MaxRank
-                        </span>
+    <!-- Row 3: 3 Talents (Col 1, Col 2, Col 3) -->
+    <div class="wow-row wow-row-3col">
+        @RenderSlot(3, 1)
+        @RenderSlot(3, 2)
+        @RenderSlot(3, 3)
+    </div>
 
-                        <!-- WoW Tooltip -->
-                        <div class="wow-tooltip tooltip-right">
-                            <div class="tooltip-header">
-                                <span class="tooltip-title">@row3Talent.Name</span>
-                                <span class="tooltip-rank">Rang @row3Talent.CurrentRank/@row3Talent.MaxRank</span>
-                            </div>
-                            @if (row3Talent.CurrentRank > 0)
-                            {
-                                <div class="tooltip-desc text-white mb-2">@row3Talent.GetCurrentDescription()</div>
-                            }
-                            @if (!row3Talent.IsMaxed)
-                            {
-                                <div class="tooltip-next-label">Næste rang:</div>
-                                <div class="tooltip-next-desc mb-2">@row3Talent.GetNextDescription()</div>
-                            }
-                            @if (!CanIncrement(row3Talent) && !row3Talent.IsMaxed)
-                            {
-                                <div class="tooltip-locked">⚠️ Kræver @row3Talent.RequiredPointsInTree point i BJJ Talenter</div>
-                            }
-                            <div class="tooltip-footer">
-                                <span>Venstre-klik for at lære</span>
-                                <span>Højre-klik for at fjerne</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="wow-talent-label">@row3Talent.Name</div>
-                </div>
-            }
-            else
-            {
-                <div class="wow-talent-container">
-                    <button class="wow-talent-slot empty-slot" @onclick="() => OpenCreateModal(3, 1)" title="Tilføj talent til Række 3">
-                        <span class="fs-4">➕</span>
-                        <span class="empty-slot-label">Tilføj Talent</span>
-                    </button>
-                    <div class="wow-talent-label text-muted">Ledig plads</div>
-                </div>
-            }
-        }
+    <!-- Connector Row 3 -> Row 4 -->
+    <div class="wow-row-connector">
+        <div class="wow-connector-line"></div>
+    </div>
+
+    <!-- Row 4: 3 Talents (Col 1, Col 2, Col 3) -->
+    <div class="wow-row wow-row-3col">
+        @RenderSlot(4, 1)
+        @RenderSlot(4, 2)
+        @RenderSlot(4, 3)
+    </div>
+
+    <!-- Connector Row 4 -> Row 5 -->
+    <div class="wow-row-connector">
+        <div class="wow-connector-line"></div>
+    </div>
+
+    <!-- Row 5: 1 Talent centered (Col 2) -->
+    <div class="wow-row wow-row-1col">
+        @RenderSlot(5, 2)
+    </div>
+
+    <!-- Connector Row 5 -> Row 6 -->
+    <div class="wow-row-connector">
+        <div class="wow-connector-line"></div>
+    </div>
+
+    <!-- Row 6: 1 Talent centered - Capstone (Col 2) -->
+    <div class="wow-row wow-row-1col">
+        @RenderSlot(6, 2)
     </div>
 </div>
 
@@ -308,25 +190,36 @@
                             <select class="form-select bg-dark text-white border-secondary"
                                     value="@_formModel.Row"
                                     @onchange="OnRowSelected">
-                                <option value="1">Række 1 (Top &bull; Kræver 0 point)</option>
-                                <option value="2">Række 2 (Midt &bull; Kræver 3 point)</option>
-                                <option value="3">Række 3 (Bund &bull; Kræver 5 point)</option>
+                                <option value="1">Række 1 (Guards &bull; Kræver 0 point)</option>
+                                <option value="2">Række 2 (Passing &bull; Kræver 5 point)</option>
+                                <option value="3">Række 3 (Pin Controls &bull; Kræver 10 point)</option>
+                                <option value="4">Række 4 (Mount Mastery &bull; Kræver 15 point)</option>
+                                <option value="5">Række 5 (Back Control &bull; Kræver 20 point)</option>
+                                <option value="6">Række 6 (Basic Master Capstone &bull; Kræver 25 point)</option>
                             </select>
                         </div>
 
-                        <!-- Column Selection (Row 2 only) -->
+                        <!-- Column Selection -->
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-warning small">Kolonne / Side</label>
-                            @if (_formModel.Row == 2)
+                            <label class="form-label fw-bold text-warning small">Kolonne Placering</label>
+                            @if (_formModel.Row == 1)
                             {
                                 <select class="form-select bg-dark text-white border-secondary" @bind="_formModel.Col">
                                     <option value="1">Venstre side (Kolonne 1)</option>
                                     <option value="2">Højre side (Kolonne 2)</option>
                                 </select>
                             }
+                            else if (_formModel.Row >= 2 && _formModel.Row <= 4)
+                            {
+                                <select class="form-select bg-dark text-white border-secondary" @bind="_formModel.Col">
+                                    <option value="1">Venstre side (Kolonne 1)</option>
+                                    <option value="2">Midte (Kolonne 2)</option>
+                                    <option value="3">Højre side (Kolonne 3)</option>
+                                </select>
+                            }
                             else
                             {
-                                <input type="text" class="form-control bg-dark text-muted border-secondary" value="Centreret (Standard)" disabled />
+                                <input type="text" class="form-control bg-dark text-muted border-secondary" value="Centreret (Kolonne 2)" disabled />
                             }
                         </div>
 
@@ -335,14 +228,14 @@
                             <label class="form-label fw-bold text-warning small">Talent Navn</label>
                             <input type="text" class="form-control bg-dark text-white border-secondary"
                                    @bind="_formModel.Name"
-                                   placeholder="F.eks. Collar Drag Mastery, De La Riva Sweep..." />
+                                   placeholder="F.eks. Full guard, Mount, Back..." />
                         </div>
 
                         <!-- Icon Chooser -->
                         <div class="col-12">
                             <label class="form-label fw-bold text-warning small">Vælg Ikon (Emoji)</label>
                             <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
-                                @foreach (var emoji in new[] { "🥋", "⚡", "🛡️", "👑", "🗡️", "🦅", "🔥", "🐍", "🥊", "⛓️", "🤼", "🪢" })
+                                @foreach (var emoji in new[] { "🥋", "⚡", "🤼", "🦅", "🗡️", "🛡️", "⛓️", "🔄", "👑", "🔥", "🪢", "🐍", "🌟" })
                                 {
                                     <button type="button"
                                             class="btn btn-sm @(_formModel.Icon == emoji ? "btn-warning" : "btn-outline-secondary") fs-5 p-1 px-2"
@@ -366,7 +259,7 @@
                             <textarea class="form-control bg-dark text-white border-secondary"
                                       rows="2"
                                       @bind="_formModel.DescriptionFormat"
-                                      placeholder="Øger submission-effektivitet med {0}%."></textarea>
+                                      placeholder="Styrker kontrol med {0}%."></textarea>
                             <div class="form-text text-muted small">Brug <code>{0}</code> som pladsholder for rangværdien på det aktuelle niveau.</div>
                         </div>
 

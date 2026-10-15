@@ -9,7 +9,7 @@ public partial class TalentsPage : ComponentBase
 {
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
-    private const string LocalStorageKey = "bjjsm_talents_v1";
+    private const string LocalStorageKey = "bjjsm_talents_basics_v2";
 
     private List<TalentNode> _talents = [];
     private bool _showModal;
@@ -61,78 +61,199 @@ public partial class TalentsPage : ComponentBase
 
     private List<TalentNode> GetDefaultTalents() =>
     [
-        // Row 1: 1 talent
+        // Row 1 (2 Talents, req 0 pts)
         new TalentNode
         {
-            Id = "iron-grip",
-            Name = "Iron Grip / Kumikata Mastery",
+            Id = "full-guard",
+            Name = "Full guard",
             Icon = "🥋",
             Row = 1,
             Col = 1,
             MaxRank = 5,
             CurrentRank = 0,
-            DescriptionFormat = "Øger grebsstyrke og kravekontrol med {0}%.",
+            DescriptionFormat = "Styrker lukket guard kontrol, hoftekontrol og submission trusler med {0}%.",
             RankValues = [2, 4, 6, 8, 10],
             RequiredPointsInTree = 0
         },
-        // Row 2: 2 talents side by side
         new TalentNode
         {
-            Id = "explosive-hip-escape",
-            Name = "Explosive Hip Escape",
+            Id = "open-guard",
+            Name = "Open guard",
             Icon = "⚡",
+            Row = 1,
+            Col = 2,
+            MaxRank = 5,
+            CurrentRank = 0,
+            DescriptionFormat = "Øger mobilitet, distance management og guard retention med {0}%.",
+            RankValues = [2, 4, 6, 8, 10],
+            RequiredPointsInTree = 0
+        },
+
+        // Row 2 (3 Talents, req 5 pts)
+        new TalentNode
+        {
+            Id = "passing-under",
+            Name = "Passing Under",
+            Icon = "🤼",
             Row = 2,
             Col = 1,
             MaxRank = 3,
             CurrentRank = 0,
-            DescriptionFormat = "Øger hoftens eksplosivitet og escape-succesrate med {0}%.",
+            DescriptionFormat = "Double under og over-under pressure passes øges med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 3
+            RequiredPointsInTree = 5
         },
         new TalentNode
         {
-            Id = "defensive-framing",
-            Name = "Defensive Framing",
-            Icon = "🛡️",
+            Id = "passer-over",
+            Name = "Passer over",
+            Icon = "🦅",
             Row = 2,
             Col = 2,
             MaxRank = 3,
             CurrentRank = 0,
-            DescriptionFormat = "Reducerer modstanderens pres i guard pass med {0}%.",
+            DescriptionFormat = "Torreando, x-pass og agility over-passes forbedres med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 3
+            RequiredPointsInTree = 5
         },
-        // Row 3: 1 talent
         new TalentNode
         {
-            Id = "pressure-passing-mastery",
-            Name = "Pressure Passing Mastery / The Mat General",
-            Icon = "👑",
+            Id = "passing-inbetween",
+            Name = "Passing inbetween",
+            Icon = "🗡️",
+            Row = 2,
+            Col = 3,
+            MaxRank = 3,
+            CurrentRank = 0,
+            DescriptionFormat = "Knee slice, knee cut og shin slide passing forbedres med {0}%.",
+            RankValues = [5, 10, 15],
+            RequiredPointsInTree = 5
+        },
+
+        // Row 3 (3 Talents, req 10 pts)
+        new TalentNode
+        {
+            Id = "half-guard",
+            Name = "Half guard",
+            Icon = "🛡️",
             Row = 3,
             Col = 1,
+            MaxRank = 3,
+            CurrentRank = 0,
+            DescriptionFormat = "Underhook battles, dogfight og lockdown kontrol øges med {0}%.",
+            RankValues = [5, 10, 15],
+            RequiredPointsInTree = 10
+        },
+        new TalentNode
+        {
+            Id = "side-control",
+            Name = "Side control",
+            Icon = "⛓️",
+            Row = 3,
+            Col = 2,
+            MaxRank = 3,
+            CurrentRank = 0,
+            DescriptionFormat = "Crossface pres, bryst-mod-bryst dominans og pin isolation forbedres med {0}%.",
+            RankValues = [5, 10, 15],
+            RequiredPointsInTree = 10
+        },
+        new TalentNode
+        {
+            Id = "north-south",
+            Name = "North south",
+            Icon = "🔄",
+            Row = 3,
+            Col = 3,
+            MaxRank = 3,
+            CurrentRank = 0,
+            DescriptionFormat = "North-south rotation, arm isolation og kimura trusler øges med {0}%.",
+            RankValues = [5, 10, 15],
+            RequiredPointsInTree = 10
+        },
+
+        // Row 4 (3 Talents, req 15 pts)
+        new TalentNode
+        {
+            Id = "mount",
+            Name = "Mount",
+            Icon = "👑",
+            Row = 4,
+            Col = 1,
+            MaxRank = 3,
+            CurrentRank = 0,
+            DescriptionFormat = "Tyngdepunkt, low mount base og armbar setups forbedres med {0}%.",
+            RankValues = [5, 10, 15],
+            RequiredPointsInTree = 15
+        },
+        new TalentNode
+        {
+            Id = "s-mount",
+            Name = "S-mount",
+            Icon = "🔥",
+            Row = 4,
+            Col = 2,
+            MaxRank = 3,
+            CurrentRank = 0,
+            DescriptionFormat = "Høj s-mount stramhed og hurtige triangle/armbar transitioner øges med {0}%.",
+            RankValues = [5, 10, 15],
+            RequiredPointsInTree = 15
+        },
+        new TalentNode
+        {
+            Id = "reverse-mount",
+            Name = "Reverse Mount",
+            Icon = "🪢",
+            Row = 4,
+            Col = 3,
+            MaxRank = 3,
+            CurrentRank = 0,
+            DescriptionFormat = "Twister hook setups og benlås transitionskontrol øges med {0}%.",
+            RankValues = [5, 10, 15],
+            RequiredPointsInTree = 15
+        },
+
+        // Row 5 (1 Talent centered, req 20 pts)
+        new TalentNode
+        {
+            Id = "back",
+            Name = "Back",
+            Icon = "🐍",
+            Row = 5,
+            Col = 2,
+            MaxRank = 5,
+            CurrentRank = 0,
+            DescriptionFormat = "Seatbelt grip, hooks kontrol og Rear Naked Choke færdiggørelse styrkes med {0}%.",
+            RankValues = [2, 4, 6, 8, 10],
+            RequiredPointsInTree = 20
+        },
+
+        // Row 6 (Capstone 1 Talent centered, req 25 pts)
+        new TalentNode
+        {
+            Id = "basic-master",
+            Name = "Basic Master",
+            Icon = "🌟",
+            Row = 6,
+            Col = 2,
             MaxRank = 1,
             CurrentRank = 0,
-            DescriptionFormat = "Låser op for nådeløst tryk fra topposition. Modstanderens stamina tappes {0}% hurtigere under dit pres.",
+            DescriptionFormat = "Total mesterskab af BJJ fundamentals. Reducerer fejl i positioner og giver {0}% øget positionsdominans.",
             RankValues = [25],
-            RequiredPointsInTree = 5
+            RequiredPointsInTree = 25
         }
     ];
 
     private void OpenCreateModal(int row = 1, int col = 1)
     {
         _formError = null;
-        var reqPoints = row switch
-        {
-            1 => 0,
-            2 => 3,
-            3 => 5,
-            _ => 0
-        };
+        var clampedRow = Math.Clamp(row, 1, 6);
+        var reqPoints = (clampedRow - 1) * 5;
+        var resolvedCol = (clampedRow == 5 || clampedRow == 6) ? 2 : (clampedRow == 1 ? Math.Clamp(col, 1, 2) : Math.Clamp(col, 1, 3));
 
         _formModel = new TalentFormModel
         {
-            Row = row,
-            Col = row == 2 ? col : 1,
+            Row = clampedRow,
+            Col = resolvedCol,
             RequiredPointsInTree = reqPoints,
             Icon = "🥋",
             MaxRank = 3,
@@ -178,19 +299,17 @@ public partial class TalentsPage : ComponentBase
 
     private void OnRowChanged(int newRow)
     {
-        _formModel.Row = newRow;
-        if (newRow != 2)
+        _formModel.Row = Math.Clamp(newRow, 1, 6);
+        if (_formModel.Row == 5 || _formModel.Row == 6)
         {
-            _formModel.Col = 1;
+            _formModel.Col = 2;
+        }
+        else if (_formModel.Row == 1 && _formModel.Col > 2)
+        {
+            _formModel.Col = 2;
         }
 
-        _formModel.RequiredPointsInTree = newRow switch
-        {
-            1 => 0,
-            2 => 3,
-            3 => 5,
-            _ => 0
-        };
+        _formModel.RequiredPointsInTree = (_formModel.Row - 1) * 5;
     }
 
     private void OnMaxRankChanged(int newMaxRank)
@@ -219,14 +338,13 @@ public partial class TalentsPage : ComponentBase
             }
         }
 
-        var col = _formModel.Row == 2 ? _formModel.Col : 1;
-        var conflict = _talents.FirstOrDefault(t => t.Row == _formModel.Row && t.Col == col);
+        var node = _formModel.ToTalentNode(existingRank);
+        var conflict = _talents.FirstOrDefault(t => t.Row == node.Row && t.Col == node.Col);
         if (conflict is not null)
         {
             _talents.Remove(conflict);
         }
 
-        var node = _formModel.ToTalentNode(existingRank);
         _talents.Add(node);
 
         await SaveToLocalStorageAsync();
