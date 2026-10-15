@@ -54,7 +54,7 @@ public class AnnualWheelTests
     {
         var slots = AnnualWheelPresets.CreateDefaultSlots(2026);
         var wheel = AnnualWheel.Create(_academyId, _programId, 2026, slots).Value;
-        var newTheme = CurriculumThemePresets.All.Last();
+        var newTheme = CurriculumThemePresets.All[^1];
 
         var assignResult = wheel.AssignTheme(1, newTheme, "Custom objective for January");
 
@@ -99,7 +99,7 @@ public class AnnualWheelTests
         var slots = AnnualWheelPresets.CreateDefaultSlots(2026);
         var wheel = AnnualWheel.Create(_academyId, _programId, 2026, slots).Value;
         wheel.MarkMonthInstantiated(3, Guid.NewGuid());
-        var theme = CurriculumThemePresets.CreatePresets().First();
+        var theme = CurriculumThemePresets.CreatePresets()[0];
 
         var result = wheel.AssignTheme(3, theme);
 

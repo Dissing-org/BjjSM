@@ -38,8 +38,10 @@ public partial class AnnualWheelPage : ComponentBase
     private string _selectedCategory = "Alle";
     private bool _isInstantiating;
 
+    private static readonly string[] DefaultCategoryFilter = ["Alle"];
+
     private IEnumerable<string> AvailableCategories =>
-        new[] { "Alle" }.Concat(_availableThemes.Select(t => t.Category).Distinct().OrderBy(c => c));
+        DefaultCategoryFilter.Concat(_availableThemes.Select(t => t.Category).Distinct().OrderBy(c => c));
 
     private IEnumerable<CurriculumThemeDto> FilteredThemes =>
         _selectedCategory == "Alle"
@@ -277,7 +279,7 @@ public partial class AnnualWheelPage : ComponentBase
         Navigation.NavigateTo($"/curriculum?year={_selectedYear}&month={_selectedMonth}");
     }
 
-    private IReadOnlyList<int> GetAssignedMonthsForTheme(Guid themeId)
+    private List<int> GetAssignedMonthsForTheme(Guid themeId)
     {
         if (_wheel is null) return [];
         return _wheel.Slots.Where(s => s.ThemeId == themeId).Select(s => s.Month).OrderBy(m => m).ToList();

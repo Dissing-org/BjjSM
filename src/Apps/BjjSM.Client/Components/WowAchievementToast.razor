@@ -1,6 +1,6 @@
 @using BjjSM.Client.Models
 @inject IJSRuntime JS
-@implements IDisposable
+@implements IAsyncDisposable
 
 @if (Current is not null)
 {
@@ -33,7 +33,11 @@
         if (Current is not null && Current.Id != _lastShownId)
         {
             _lastShownId = Current.Id;
-            _cts?.Cancel();
+            if (_cts is not null)
+            {
+                await _cts.CancelAsync();
+                _cts.Dispose();
+            }
             _cts = new CancellationTokenSource();
             var token = _cts.Token;
 
@@ -55,7 +59,12 @@
         else if (Current is null)
         {
             _lastShownId = null;
-            _cts?.Cancel();
+            if (_cts is not null)
+            {
+                await _cts.CancelAsync();
+                _cts.Dispose();
+                _cts = null;
+            }
         }
     }
 
@@ -110,7 +119,12 @@
 
     private async Task DismissAsync()
     {
-        _cts?.Cancel();
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync();
+            _cts.Dispose();
+            _cts = null;
+        }
         _lastShownId = null;
         if (OnDismiss.HasDelegate)
         {
@@ -118,9 +132,13 @@
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _cts?.Cancel();
-        _cts?.Dispose();
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync();
+            _cts.Dispose();
+            _cts = null;
+        }
     }
 }

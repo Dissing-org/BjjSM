@@ -78,5 +78,6 @@ public class MembershipsPersistenceTests : IDisposable
     public void Dispose()
     {
         _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

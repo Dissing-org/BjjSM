@@ -83,7 +83,7 @@ public sealed class QuestPdfSyllabusGenerator : ISyllabusPdfGenerator
 
                             col.Item().Padding(6).Column(tc =>
                             {
-                                if (!week.Techniques.Any())
+                                if (week.Techniques.Count == 0)
                                 {
                                     tc.Item().PaddingTop(8).Text("No techniques scheduled").Italic().FontSize(8).FontColor(TextMuted);
                                 }

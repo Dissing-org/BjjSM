@@ -6,7 +6,7 @@ public static class CurriculumThemePresets
 
     public static IReadOnlyList<CurriculumTheme> All => CreatePresets();
 
-    private static IReadOnlyList<CurriculumTheme> BuildPresets()
+    private static List<CurriculumTheme> BuildPresets()
     {
         return new List<CurriculumTheme>
         {

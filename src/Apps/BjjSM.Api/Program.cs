@@ -47,7 +47,16 @@ try
     {
         options.AddDefaultPolicy(policy =>
         {
-            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+            policy.SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrWhiteSpace(origin)) return false;
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+                return uri.Host == "localhost" 
+                    || uri.Host == "127.0.0.1" 
+                    || uri.Host.EndsWith("dissing.dev", StringComparison.OrdinalIgnoreCase);
+            })
+            .AllowAnyHeader()
+            .AllowAnyMethod();
         });
     });
 
@@ -58,17 +67,17 @@ try
     app.UseCors();
     app.UseFastEndpoints();
 
-    using (var scope = app.Services.CreateScope())
+    await using (var scope = app.Services.CreateAsyncScope())
     {
         var memDb = scope.ServiceProvider.GetRequiredService<MembershipsDbContext>();
-        memDb.Database.EnsureCreated();
+        await memDb.Database.EnsureCreatedAsync();
         var memSql = memDb.Database.GenerateCreateScript()
             .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ")
             .Replace("CREATE INDEX ", "CREATE INDEX IF NOT EXISTS ")
             .Replace("CREATE UNIQUE INDEX ", "CREATE UNIQUE INDEX IF NOT EXISTS ");
-        memDb.Database.ExecuteSqlRaw(memSql);
+        await memDb.Database.ExecuteSqlRawAsync(memSql);
 
-        if (!memDb.Practitioners.Any())
+        if (!await memDb.Practitioners.AnyAsync())
         {
             var coachId = Guid.NewGuid();
             var academyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -106,24 +115,24 @@ try
             p4.Promote(BjjSM.Modules.Memberships.Domain.Rank.CreateKids(BjjSM.Modules.Memberships.Domain.KidsBelt.Yellow, 2).Value, DateTime.UtcNow.AddMonths(-1), coachId, "Respect, discipline and takedown technique.");
 
             memDb.Practitioners.AddRange(p1, p2, p3, p4);
-            memDb.SaveChanges();
+            await memDb.SaveChangesAsync();
         }
 
         var curDb = scope.ServiceProvider.GetRequiredService<CurriculumDbContext>();
-        curDb.Database.EnsureCreated();
+        await curDb.Database.EnsureCreatedAsync();
         var curSql = curDb.Database.GenerateCreateScript()
             .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ")
             .Replace("CREATE INDEX ", "CREATE INDEX IF NOT EXISTS ")
             .Replace("CREATE UNIQUE INDEX ", "CREATE UNIQUE INDEX IF NOT EXISTS ");
-        curDb.Database.ExecuteSqlRaw(curSql);
+        await curDb.Database.ExecuteSqlRawAsync(curSql);
 
-        if (!curDb.CurriculumThemes.Any())
+        if (!await curDb.CurriculumThemes.AnyAsync())
         {
             curDb.CurriculumThemes.AddRange(BjjSM.Modules.Curriculum.Domain.CurriculumThemePresets.CreatePresets());
-            curDb.SaveChanges();
+            await curDb.SaveChangesAsync();
         }
 
-        if (!curDb.MonthlyPlans.Any())
+        if (!await curDb.MonthlyPlans.AnyAsync())
         {
             var academyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
             var programId = Guid.Parse("11111111-1111-1111-1111-111111111111");
@@ -151,11 +160,11 @@ try
             plan.AddTechnique(4, new BjjSM.Modules.Curriculum.Domain.TechniqueDrill(Guid.NewGuid(), "North-South Spin & Turtle Recovery", BjjSM.Modules.Curriculum.Domain.TechniqueCategory.Technique, "Protect chin, tuck elbows, rotate on top of shoulders", null, 2));
 
             curDb.MonthlyPlans.Add(plan);
-            curDb.SaveChanges();
+            await curDb.SaveChangesAsync();
         }
     }
 
-    app.Run();
+    await app.RunAsync();
 }
 catch (Exception ex)
 {
@@ -163,5 +172,5 @@ catch (Exception ex)
 }
 finally
 {
-    Log.CloseAndFlush();
+    await Log.CloseAndFlushAsync();
 }

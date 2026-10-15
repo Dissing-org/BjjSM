@@ -111,7 +111,7 @@ public partial class TalentsPage : ComponentBase
         }
     }
 
-    private List<TalentNode> GetDefaultTalents() =>
+    private static List<TalentNode> GetDefaultTalents() =>
     [
         // Row 1 (2 Talents, req 0 pts)
         new TalentNode
@@ -538,7 +538,7 @@ public partial class TalentsPage : ComponentBase
         return "locked";
     }
 
-    private string GetRankBadgeCss(TalentNode talent)
+    private static string GetRankBadgeCss(TalentNode talent)
     {
         if (talent.IsMaxed) return "maxed";
         if (talent.HasPoints) return "has-points";
