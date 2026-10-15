@@ -57,6 +57,12 @@
                                  @onclick="() => IncrementTalent(talent)"
                                  @oncontextmenu="() => DecrementTalent(talent)"
                                  @oncontextmenu:preventDefault="true">
+                                @if (talent.HasVideo)
+                                {
+                                    <a href="@talent.VideoUrl" target="_blank" rel="noopener noreferrer"
+                                       class="wow-talent-video-btn" title="Se videovejledning (åbner i ny fane)"
+                                       @onclick:stopPropagation="true">▶</a>
+                                }
                                 <button class="wow-talent-edit-btn" title="Rediger talent" @onclick="() => OpenEditModal(talent)" @onclick:stopPropagation="true">✎</button>
                                 <span class="wow-talent-icon">@talent.Icon</span>
                                 <span class="wow-rank-badge @GetRankBadgeCss(talent)">
@@ -81,6 +87,15 @@
                                     @if (!CanIncrement(talent) && !talent.IsMaxed)
                                     {
                                         <div class="tooltip-locked">⚠️ Kræver @talent.RequiredPointsInTree point i BJJ Talenter</div>
+                                    }
+                                    @if (talent.HasVideo)
+                                    {
+                                        <div class="tooltip-video-section my-2">
+                                            <a href="@talent.VideoUrl" target="_blank" rel="noopener noreferrer"
+                                               class="btn btn-sm btn-outline-warning w-100 fw-bold d-flex align-items-center justify-content-center gap-1 tooltip-video-link">
+                                                <span>📺</span> Se Videovejledning <span class="small">↗</span>
+                                            </a>
+                                        </div>
                                     }
                                     <div class="tooltip-footer">
                                         <span>Venstre-klik for at lære</span>
@@ -286,6 +301,15 @@
                                       @bind="_formModel.DescriptionFormat"
                                       placeholder="Styrker kontrol med {0}%."></textarea>
                             <div class="form-text text-muted small">Brug <code>{0}</code> som pladsholder for rangværdien på det aktuelle niveau.</div>
+                        </div>
+
+                        <!-- Video URL -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-warning small">Videolink (YouTube, Vimeo, etc.)</label>
+                            <input type="url" class="form-control bg-dark text-white border-secondary"
+                                   @bind="_formModel.VideoUrl"
+                                   placeholder="https://www.youtube.com/watch?v=..." />
+                            <div class="form-text text-muted small">Valgfrit link til videoinstruktion eller teknikgennemgang.</div>
                         </div>
 
                         <!-- Max Rank -->

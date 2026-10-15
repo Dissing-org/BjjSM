@@ -282,6 +282,7 @@ html, body {
 
 .wow-talent-slot:hover .wow-tooltip {
     display: block;
+    pointer-events: auto;
 }
 
 .tooltip-header {
@@ -328,6 +329,22 @@ html, body {
     font-size: 0.78rem;
     font-weight: 700;
     margin-top: 6px;
+}
+
+.tooltip-video-link {
+    font-size: 0.75rem;
+    padding: 3px 6px;
+    border-color: #FFEE00;
+    color: #FFEE00;
+    background: rgba(32, 64, 154, 0.4);
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.tooltip-video-link:hover {
+    background: #FFEE00;
+    color: #050505;
+    border-color: #FFEE00;
 }
 
 .tooltip-footer {
@@ -401,6 +418,39 @@ html, body {
 }
 
 .wow-talent-slot:hover .wow-talent-edit-btn {
+    opacity: 1;
+}
+
+.wow-talent-video-btn {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: 22px;
+    height: 22px;
+    background: #050505;
+    border: 1px solid #FFEE00;
+    color: #FFEE00;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    opacity: 0.85;
+    transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+    z-index: 10;
+    padding-left: 2px; /* optical center for triangle play icon */
+}
+
+.wow-talent-video-btn:hover {
+    opacity: 1;
+    transform: scale(1.2);
+    background: #EF4444;
+    border-color: #EF4444;
+    color: #FFFFFF;
+}
+
+.wow-talent-slot:hover .wow-talent-video-btn {
     opacity: 1;
 }
 

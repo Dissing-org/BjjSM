@@ -9,7 +9,7 @@ public partial class TalentsPage : ComponentBase
 {
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
-    private const string LocalStorageKey = "bjjsm_talents_basics_v2";
+    private const string LocalStorageKey = "bjjsm_talents_basics_v3";
 
     private List<TalentNode> _talents = [];
     private bool _showModal;
@@ -73,7 +73,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Styrker lukket guard kontrol, hoftekontrol og submission trusler med {0}%.",
             RankValues = [2, 4, 6, 8, 10],
-            RequiredPointsInTree = 0
+            RequiredPointsInTree = 0,
+            VideoUrl = "https://www.youtube.com/watch?v=N4uE-4_lB1E"
         },
         new TalentNode
         {
@@ -86,7 +87,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Øger mobilitet, distance management og guard retention med {0}%.",
             RankValues = [2, 4, 6, 8, 10],
-            RequiredPointsInTree = 0
+            RequiredPointsInTree = 0,
+            VideoUrl = "https://www.youtube.com/watch?v=k4T0h96u8_8"
         },
 
         // Row 2 (3 Talents, req 5 pts)
@@ -101,7 +103,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Double under og over-under pressure passes øges med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 5
+            RequiredPointsInTree = 5,
+            VideoUrl = "https://www.youtube.com/watch?v=F3qLh3wD3Xk"
         },
         new TalentNode
         {
@@ -114,7 +117,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Torreando, x-pass og agility over-passes forbedres med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 5
+            RequiredPointsInTree = 5,
+            VideoUrl = "https://www.youtube.com/watch?v=qT3gKkJ1Z9U"
         },
         new TalentNode
         {
@@ -127,7 +131,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Knee slice, knee cut og shin slide passing forbedres med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 5
+            RequiredPointsInTree = 5,
+            VideoUrl = "https://www.youtube.com/watch?v=6YtT3hFm4U0"
         },
 
         // Row 3 (3 Talents, req 10 pts)
@@ -142,7 +147,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Underhook battles, dogfight og lockdown kontrol øges med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 10
+            RequiredPointsInTree = 10,
+            VideoUrl = "https://www.youtube.com/watch?v=sW1jF3x_H_4"
         },
         new TalentNode
         {
@@ -155,7 +161,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Crossface pres, bryst-mod-bryst dominans og pin isolation forbedres med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 10
+            RequiredPointsInTree = 10,
+            VideoUrl = "https://www.youtube.com/watch?v=t8Oa1r1m2aE"
         },
         new TalentNode
         {
@@ -168,7 +175,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "North-south rotation, arm isolation og kimura trusler øges med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 10
+            RequiredPointsInTree = 10,
+            VideoUrl = "https://www.youtube.com/watch?v=8l0e3cE0G4g"
         },
 
         // Row 4 (3 Talents, req 15 pts)
@@ -183,7 +191,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Tyngdepunkt, low mount base og armbar setups forbedres med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 15
+            RequiredPointsInTree = 15,
+            VideoUrl = "https://www.youtube.com/watch?v=x7E2X5o3T0Y"
         },
         new TalentNode
         {
@@ -196,7 +205,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Høj s-mount stramhed og hurtige triangle/armbar transitioner øges med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 15
+            RequiredPointsInTree = 15,
+            VideoUrl = "https://www.youtube.com/watch?v=YwV_gE7o9_U"
         },
         new TalentNode
         {
@@ -209,7 +219,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Twister hook setups og benlås transitionskontrol øges med {0}%.",
             RankValues = [5, 10, 15],
-            RequiredPointsInTree = 15
+            RequiredPointsInTree = 15,
+            VideoUrl = "https://www.youtube.com/watch?v=VpG8xZ9wF1k"
         },
 
         // Row 5 (1 Talent centered, req 20 pts)
@@ -224,7 +235,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Seatbelt grip, hooks kontrol og Rear Naked Choke færdiggørelse styrkes med {0}%.",
             RankValues = [2, 4, 6, 8, 10],
-            RequiredPointsInTree = 20
+            RequiredPointsInTree = 20,
+            VideoUrl = "https://www.youtube.com/watch?v=Z6zM-4H4o3E"
         },
 
         // Row 6 (Capstone 1 Talent centered, req 25 pts)
@@ -239,7 +251,8 @@ public partial class TalentsPage : ComponentBase
             CurrentRank = 0,
             DescriptionFormat = "Total mesterskab af BJJ fundamentals. Reducerer fejl i positioner og giver {0}% øget positionsdominans.",
             RankValues = [25],
-            RequiredPointsInTree = 25
+            RequiredPointsInTree = 25,
+            VideoUrl = "https://www.youtube.com/watch?v=Yp6jU9fV8q8"
         }
     ];
 

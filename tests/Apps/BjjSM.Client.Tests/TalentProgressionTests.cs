@@ -258,4 +258,61 @@ public class TalentProgressionTests
         Assert.NotNull(node.RankValues);
         Assert.NotEmpty(node.RankValues);
     }
+
+    [Theory]
+    [InlineData("https://www.youtube.com/watch?v=N4uE-4_lB1E", true)]
+    [InlineData("https://vimeo.com/123456", true)]
+    [InlineData(null, false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    public void TalentNode_HasVideo_ReturnsExpected(string? videoUrl, bool expected)
+    {
+        var node = new TalentNode { VideoUrl = videoUrl };
+        Assert.Equal(expected, node.HasVideo);
+    }
+
+    [Fact]
+    public void TalentFormModel_ToTalentNode_MapsVideoUrl_Correctly()
+    {
+        var formWithValidUrl = new TalentFormModel
+        {
+            Name = "Armbar",
+            VideoUrl = "  https://www.youtube.com/watch?v=N4uE-4_lB1E   "
+        };
+        var nodeWithValidUrl = formWithValidUrl.ToTalentNode();
+        Assert.Equal("https://www.youtube.com/watch?v=N4uE-4_lB1E", nodeWithValidUrl.VideoUrl);
+        Assert.True(nodeWithValidUrl.HasVideo);
+
+        var formWithEmptyUrl = new TalentFormModel
+        {
+            Name = "Triangle",
+            VideoUrl = "   "
+        };
+        var nodeWithEmptyUrl = formWithEmptyUrl.ToTalentNode();
+        Assert.Null(nodeWithEmptyUrl.VideoUrl);
+        Assert.False(nodeWithEmptyUrl.HasVideo);
+
+        var formWithNullUrl = new TalentFormModel
+        {
+            Name = "Kimura",
+            VideoUrl = null
+        };
+        var nodeWithNullUrl = formWithNullUrl.ToTalentNode();
+        Assert.Null(nodeWithNullUrl.VideoUrl);
+        Assert.False(nodeWithNullUrl.HasVideo);
+    }
+
+    [Fact]
+    public void TalentFormModel_FromTalentNode_PopulatesVideoUrl()
+    {
+        var node = new TalentNode
+        {
+            Id = "test-node",
+            Name = "Guillotine",
+            VideoUrl = "https://www.youtube.com/watch?v=abc123xyz"
+        };
+
+        var form = TalentFormModel.FromTalentNode(node);
+        Assert.Equal("https://www.youtube.com/watch?v=abc123xyz", form.VideoUrl);
+    }
 }

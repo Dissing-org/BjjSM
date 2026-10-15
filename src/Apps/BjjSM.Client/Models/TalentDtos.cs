@@ -13,7 +13,9 @@ public class TalentNode
     public int[] RankValues { get; set; } = [];
     public int RequiredPointsInTree { get; set; }
     public string? PrerequisiteTalentId { get; set; }
+    public string? VideoUrl { get; set; }
 
+    public bool HasVideo => !string.IsNullOrWhiteSpace(VideoUrl);
     public bool IsMaxed => CurrentRank >= MaxRank;
     public bool HasPoints => CurrentRank > 0;
 
@@ -58,6 +60,7 @@ public class TalentFormModel
     public string RankValuesRaw { get; set; } = "5, 10, 15";
     public int RequiredPointsInTree { get; set; } = 0;
     public string? PrerequisiteTalentId { get; set; }
+    public string? VideoUrl { get; set; }
 
     public bool IsNew => string.IsNullOrWhiteSpace(Id);
 
@@ -74,7 +77,8 @@ public class TalentFormModel
             DescriptionFormat = node.DescriptionFormat,
             RankValuesRaw = string.Join(", ", node.RankValues ?? []),
             RequiredPointsInTree = node.RequiredPointsInTree,
-            PrerequisiteTalentId = node.PrerequisiteTalentId
+            PrerequisiteTalentId = node.PrerequisiteTalentId,
+            VideoUrl = node.VideoUrl
         };
     }
 
@@ -102,7 +106,8 @@ public class TalentFormModel
             DescriptionFormat = DescriptionFormat?.Trim() ?? string.Empty,
             RankValues = parsedRankValues ?? [],
             RequiredPointsInTree = RequiredPointsInTree,
-            PrerequisiteTalentId = PrerequisiteTalentId
+            PrerequisiteTalentId = PrerequisiteTalentId,
+            VideoUrl = string.IsNullOrWhiteSpace(VideoUrl) ? null : VideoUrl.Trim()
         };
     }
 
