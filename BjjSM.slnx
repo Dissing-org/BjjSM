@@ -26,4 +26,10 @@
   <Folder Name="/04. Tests/Memberships/">
     <Project Path="tests/Modules/Memberships/BjjSM.Modules.Memberships.Domain.Tests/BjjSM.Modules.Memberships.Domain.Tests.csproj" />
   </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Apps/" />
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/Apps/">
+    <Project Path="tests/Apps/BjjSM.Client.Tests/BjjSM.Client.Tests.csproj" />
+  </Folder>
 </Solution>

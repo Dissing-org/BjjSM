@@ -115,6 +115,11 @@ html, body {
     z-index: 2;
 }
 
+.wow-row:hover,
+.wow-row:has(.wow-talent-slot:hover) {
+    z-index: 50;
+}
+
 .wow-row.wow-row-3col {
     gap: 2rem;
 }
@@ -160,6 +165,13 @@ html, body {
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.wow-talent-container:hover,
+.wow-talent-container:has(.wow-talent-slot:hover) {
+    z-index: 100;
 }
 
 .wow-talent-slot {
@@ -172,6 +184,7 @@ html, body {
     align-items: center;
     justify-content: center;
     position: relative;
+    z-index: 1;
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
@@ -179,6 +192,7 @@ html, body {
 
 .wow-talent-slot:hover {
     transform: translateY(-2px) scale(1.05);
+    z-index: 200;
 }
 
 .wow-talent-slot.unlocked {
@@ -253,7 +267,7 @@ html, body {
     border-radius: 8px;
     padding: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95), 0 0 12px rgba(153, 122, 0, 0.35);
-    z-index: 999;
+    z-index: 1000;
     pointer-events: none;
     text-align: left;
 }
@@ -388,4 +402,93 @@ html, body {
 
 .wow-talent-slot:hover .wow-talent-edit-btn {
     opacity: 1;
+}
+
+/* Mini touch / mobile action buttons for talent increment/decrement */
+.wow-slot-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    margin-top: 3px;
+}
+
+.wow-btn-mini {
+    width: 26px;
+    height: 22px;
+    padding: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 1px solid #334155;
+    background: #0B0F19;
+    color: #CBD5E1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.wow-btn-mini:hover:not(:disabled) {
+    border-color: #FFEE00;
+    color: #FFEE00;
+    background: #20409A;
+}
+
+.wow-btn-mini:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    border-color: #1E293B;
+    color: #64748B;
+}
+
+.wow-btn-mini.btn-decrement:hover:not(:disabled) {
+    border-color: #EF4444;
+    color: #EF4444;
+    background: #2D1515;
+}
+
+.wow-btn-mini.btn-increment:hover:not(:disabled) {
+    border-color: #4ADE80;
+    color: #4ADE80;
+    background: #0F291E;
+}
+
+/* Responsive mobile rules for WoW Talent Tree & Tooltip */
+@media (max-width: 768px) {
+    .wow-tree-canvas {
+        padding: 1.5rem 0.5rem;
+    }
+
+    .wow-row.wow-row-3col {
+        gap: 0.75rem;
+    }
+
+    .wow-row.wow-row-2col {
+        gap: 2rem;
+    }
+
+    .wow-talent-slot {
+        width: 60px;
+        height: 60px;
+    }
+
+    .wow-talent-icon {
+        font-size: 1.6rem;
+    }
+
+    .wow-tooltip {
+        position: absolute;
+        left: 50% !important;
+        right: auto !important;
+        top: calc(100% + 10px) !important;
+        bottom: auto !important;
+        transform: translateX(-50%) !important;
+        width: 260px;
+        max-width: 85vw;
+        z-index: 2000;
+    }
 }

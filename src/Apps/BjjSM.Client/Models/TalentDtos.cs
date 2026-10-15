@@ -19,16 +19,30 @@ public class TalentNode
 
     public string GetCurrentDescription()
     {
-        if (CurrentRank <= 0 || RankValues.Length == 0) return string.Empty;
+        if (CurrentRank <= 0 || RankValues == null || RankValues.Length == 0) return string.Empty;
         var idx = Math.Min(CurrentRank - 1, RankValues.Length - 1);
-        return string.Format(DescriptionFormat, RankValues[idx]);
+        try
+        {
+            return string.Format(DescriptionFormat, RankValues[idx]);
+        }
+        catch (FormatException)
+        {
+            return DescriptionFormat.Replace("{0}", RankValues[idx].ToString());
+        }
     }
 
     public string GetNextDescription()
     {
-        if (IsMaxed || RankValues.Length == 0) return string.Empty;
+        if (IsMaxed || RankValues == null || RankValues.Length == 0) return string.Empty;
         var idx = Math.Min(CurrentRank, RankValues.Length - 1);
-        return string.Format(DescriptionFormat, RankValues[idx]);
+        try
+        {
+            return string.Format(DescriptionFormat, RankValues[idx]);
+        }
+        catch (FormatException)
+        {
+            return DescriptionFormat.Replace("{0}", RankValues[idx].ToString());
+        }
     }
 }
 
@@ -86,7 +100,7 @@ public class TalentFormModel
             MaxRank = Math.Clamp(MaxRank, 1, 5),
             CurrentRank = Math.Min(existingCurrentRank, Math.Clamp(MaxRank, 1, 5)),
             DescriptionFormat = DescriptionFormat?.Trim() ?? string.Empty,
-            RankValues = parsedRankValues,
+            RankValues = parsedRankValues ?? [],
             RequiredPointsInTree = RequiredPointsInTree,
             PrerequisiteTalentId = PrerequisiteTalentId
         };

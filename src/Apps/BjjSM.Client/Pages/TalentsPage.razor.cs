@@ -246,9 +246,41 @@ public partial class TalentsPage : ComponentBase
     private void OpenCreateModal(int row = 1, int col = 1)
     {
         _formError = null;
-        var clampedRow = Math.Clamp(row, 1, 6);
+        var targetRow = row;
+        var targetCol = col;
+
+        if (_talents.Any(t => t.Row == targetRow && t.Col == targetCol))
+        {
+            var found = false;
+            for (var r = 1; r <= 6; r++)
+            {
+                var minCol = (r == 5 || r == 6) ? 2 : 1;
+                var maxCol = r switch
+                {
+                    1 => 2,
+                    >= 2 and <= 4 => 3,
+                    5 or 6 => 2,
+                    _ => 3
+                };
+
+                for (var c = minCol; c <= maxCol; c++)
+                {
+                    if (!_talents.Any(t => t.Row == r && t.Col == c))
+                    {
+                        targetRow = r;
+                        targetCol = c;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found) break;
+            }
+        }
+
+        var clampedRow = Math.Clamp(targetRow, 1, 6);
         var reqPoints = (clampedRow - 1) * 5;
-        var resolvedCol = (clampedRow == 5 || clampedRow == 6) ? 2 : (clampedRow == 1 ? Math.Clamp(col, 1, 2) : Math.Clamp(col, 1, 3));
+        var resolvedCol = (clampedRow == 5 || clampedRow == 6) ? 2 : (clampedRow == 1 ? Math.Clamp(targetCol, 1, 2) : Math.Clamp(targetCol, 1, 3));
 
         _formModel = new TalentFormModel
         {
@@ -334,15 +366,20 @@ public partial class TalentsPage : ComponentBase
             if (old is not null)
             {
                 existingRank = old.CurrentRank;
-                _talents.Remove(old);
             }
         }
 
         var node = _formModel.ToTalentNode(existingRank);
-        var conflict = _talents.FirstOrDefault(t => t.Row == node.Row && t.Col == node.Col);
+        var conflict = _talents.FirstOrDefault(t => t.Row == node.Row && t.Col == node.Col && t.Id != node.Id);
         if (conflict is not null)
         {
-            _talents.Remove(conflict);
+            _formError = $"Pladsen (Række {node.Row}, Kolonne {node.Col}) er allerede optaget af '{conflict.Name}'. Vælg en ledig plads.";
+            return;
+        }
+
+        if (!_formModel.IsNew)
+        {
+            _talents.RemoveAll(t => t.Id == _formModel.Id);
         }
 
         _talents.Add(node);
@@ -355,6 +392,13 @@ public partial class TalentsPage : ComponentBase
     {
         if (!_formModel.IsNew)
         {
+            var target = _talents.FirstOrDefault(t => t.Id == _formModel.Id);
+            if (target is not null && target.CurrentRank > 0)
+            {
+                _formError = "Nulstil venligst point i dette talent (eller nulstil hele træet) før du sletter det.";
+                return;
+            }
+
             _talents.RemoveAll(t => t.Id == _formModel.Id);
             await SaveToLocalStorageAsync();
         }
@@ -372,69 +416,18 @@ public partial class TalentsPage : ComponentBase
 
     private async Task ResetToDefaultsAsync()
     {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Er du sikker på, at du vil nulstille til standard BJJ Basics træet? Dette vil fjerne eventuelle brugerdefinerede talenter.");
+        if (!confirmed) return;
+
         _talents = GetDefaultTalents();
         await SaveToLocalStorageAsync();
     }
 
-    private bool CanIncrement(TalentNode talent)
-    {
-        if (talent.CurrentRank >= talent.MaxRank) return false;
+    private bool CanIncrement(TalentNode talent) =>
+        TalentProgressionEngine.CanIncrement(_talents, talent);
 
-        var pointsBeforeRow = _talents.Where(t => t.Row < talent.Row).Sum(t => t.CurrentRank);
-        if (pointsBeforeRow < talent.RequiredPointsInTree) return false;
-
-        if (!string.IsNullOrEmpty(talent.PrerequisiteTalentId))
-        {
-            var prereq = _talents.FirstOrDefault(t => t.Id == talent.PrerequisiteTalentId);
-            if (prereq is null || !prereq.IsMaxed) return false;
-        }
-
-        return true;
-    }
-
-    private bool CanDecrement(TalentNode talent)
-    {
-        if (talent.CurrentRank <= 0) return false;
-
-        var simulated = _talents.Select(t => new
-        {
-            t.Id,
-            t.Row,
-            t.RequiredPointsInTree,
-            t.PrerequisiteTalentId,
-            Rank = t.Id == talent.Id ? t.CurrentRank - 1 : t.CurrentRank
-        }).ToList();
-
-        foreach (var other in simulated.Where(t => t.Rank > 0))
-        {
-            if (other.PrerequisiteTalentId == talent.Id)
-            {
-                var targetPrereq = _talents.First(t => t.Id == talent.Id);
-                if (simulated.First(t => t.Id == talent.Id).Rank < targetPrereq.MaxRank)
-                {
-                    return false;
-                }
-            }
-        }
-
-        var maxRowWithPoints = simulated.Where(t => t.Rank > 0).Select(t => t.Row).DefaultIfEmpty(1).Max();
-        for (int r = 2; r <= maxRowWithPoints; r++)
-        {
-            var rowHasPoints = simulated.Any(t => t.Row == r && t.Rank > 0);
-            if (rowHasPoints)
-            {
-                var rowTalents = _talents.Where(t => t.Row == r).ToList();
-                var minRequiredForThisRow = rowTalents.Count > 0 ? rowTalents.Min(t => t.RequiredPointsInTree) : 0;
-                var pointsBelow = simulated.Where(t => t.Row < r).Sum(t => t.Rank);
-                if (pointsBelow < minRequiredForThisRow)
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
+    private bool CanDecrement(TalentNode talent) =>
+        TalentProgressionEngine.CanDecrement(_talents, talent);
 
     private async Task IncrementTalent(TalentNode talent)
     {
