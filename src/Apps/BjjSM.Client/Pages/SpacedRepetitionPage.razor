@@ -1,0 +1,766 @@
+@page "/spaced-repetition"
+
+<PageTitle>BjjSM - Spaced Repetition &amp; BJJ Recall</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h1 class="h2 fw-bold text-dark m-0">🧠 Spaced Repetition &amp; Tactical Recall</h1>
+        <p class="text-muted m-0">Customizable BJJ field templates &bull; Per-deck SM-2 scheduling &bull; Due &amp; Cram study sessions</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <button class="btn @(_activeView == "dashboard" ? "btn-brand-primary" : "btn-outline-dark") fw-bold" @onclick="SwitchToDashboard">
+            📊 Decks &amp; Mastery
+        </button>
+        <button class="btn @(_activeView == "templates" ? "btn-brand-primary" : "btn-outline-dark") fw-bold" @onclick="OpenTemplateManager">
+            🧩 Field Templates
+        </button>
+        <button class="btn btn-outline-dark fw-bold" @onclick="OpenNewDeckModal">
+            ➕ New Deck
+        </button>
+        <button class="btn btn-outline-dark fw-bold" @onclick="OpenImportJsonModal">
+            📥 Import JSON
+        </button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center justify-content-between mb-3 shadow-sm" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <span>⚠️</span>
+            <span>@_errorMessage</span>
+        </div>
+        <button type="button" class="btn-close" @onclick="() => _errorMessage = null" aria-label="Close"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_successMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center justify-content-between mb-3 shadow-sm" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <span>✅</span>
+            <span>@_successMessage</span>
+        </div>
+        <button type="button" class="btn-close" @onclick="() => _successMessage = null" aria-label="Close"></button>
+    </div>
+}
+
+@if (_isLoading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border" style="color: #20409A;" role="status">
+            <span class="visually-hidden">Loading spaced repetition system...</span>
+        </div>
+        <p class="text-muted mt-2">Loading decks, templates, and SM-2 schedule...</p>
+    </div>
+}
+else if (_overview is not null)
+{
+    @if (_activeView == "dashboard")
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-top: 4px solid #20409A !important; border-radius: 8px;">
+                    <div class="text-muted small fw-bold text-uppercase">Due Right Now</div>
+                    <div class="display-6 fw-bold" style="color: #20409A;">@_overview.TotalDueNow</div>
+                    <div class="small text-muted">Across @_overview.Decks.Count active decks</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-top: 4px solid #FFEE00 !important; border-radius: 8px;">
+                    <div class="text-muted small fw-bold text-uppercase">Retention Rate</div>
+                    <div class="display-6 fw-bold text-dark">@_overview.OverallRetentionPercent%</div>
+                    <div class="small text-muted">Good/Easy over @_overview.TotalReviewsAllTime total reviews</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-top: 4px solid #050505 !important; border-radius: 8px;">
+                    <div class="text-muted small fw-bold text-uppercase">Reviews Today</div>
+                    <div class="display-6 fw-bold text-dark">@_overview.ReviewsTodayCount</div>
+                    <div class="small text-muted">Completed today (UTC)</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-top: 4px solid #20409A !important; border-radius: 8px;">
+                    <div class="text-muted small fw-bold text-uppercase">Total Flashcards</div>
+                    <div class="display-6 fw-bold text-dark">@_overview.TotalCards</div>
+                    <div class="small text-muted">@_overview.Templates.Count custom field templates</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm p-3 mb-4 bg-white" style="border-radius: 8px;">
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <h6 class="fw-bold text-dark m-0">📅 14-Day Due Review Forecast</h6>
+                <span class="text-muted small">Scheduled workload across all active decks</span>
+            </div>
+            <div class="d-flex align-items-end gap-2 pt-2" style="height: 110px; overflow-x: auto;">
+                @{
+                    var maxForecast = Math.Max(1, _overview.Forecast14Days.Max(f => f.DueCount));
+                }
+                @foreach (var day in _overview.Forecast14Days)
+                {
+                    var heightPct = Math.Max(8, (int)Math.Round(day.DueCount * 100.0 / maxForecast));
+                    var barColor = day.DueCount > 0 ? "#20409A" : "#E2E8F0";
+                    <div @key="day.DateUtc" class="d-flex flex-column align-items-center flex-fill" style="min-width: 48px;">
+                        <span class="small fw-bold" style="font-size: 0.72rem; color: #050505;">@day.DueCount</span>
+                        <div class="w-100 rounded-top" style="height: @(heightPct * 0.65)px; background-color: @barColor; border: 1px solid #050505;"></div>
+                        <span class="text-muted mt-1 text-truncate" style="font-size: 0.68rem;">@day.DateLabel</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="row g-4">
+            @foreach (var deck in _overview.Decks)
+            {
+                var total = Math.Max(1, deck.TotalCards);
+                var newPct = Math.Round(deck.NewCount * 100.0 / total, 1);
+                var learnPct = Math.Round(deck.LearningCount * 100.0 / total, 1);
+                var youngPct = Math.Round(deck.YoungCount * 100.0 / total, 1);
+                var maturePct = Math.Round(deck.MatureCount * 100.0 / total, 1);
+                var suspPct = Math.Round(deck.SuspendedCount * 100.0 / total, 1);
+
+                <div @key="deck.Id" class="col-lg-6">
+                    <div class="card border-0 shadow-sm p-4 h-100 bg-white" style="border-radius: 8px; border-left: 5px solid #20409A !important;">
+                        <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge" style="background-color: #EBF0FA; color: #20409A; font-weight: 700;">@deck.Category</span>
+                                    <span class="badge bg-light text-dark border">🧩 @deck.TemplateName</span>
+                                </div>
+                                <h4 class="fw-bold text-dark m-0">@deck.Name</h4>
+                            </div>
+                            <span class="badge px-3 py-2" style="background-color: #FFEE00; color: #050505; font-weight: 800; font-size: 0.85rem; border: 1px solid #050505;">
+                                @deck.DueNowCount Due
+                            </span>
+                        </div>
+
+                        <p class="text-muted small mb-3">@deck.Description</p>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="fw-bold text-dark">Maturity Distribution (@deck.TotalCards cards)</span>
+                                <span class="text-muted">Steps: @deck.SchedulingOptions.LearningStepsMinutes min &bull; Ease: @deck.SchedulingOptions.StartingEaseFactor</span>
+                            </div>
+                            <div class="progress" style="height: 12px; background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                                <div class="progress-bar" style="width: @(newPct)%; background-color: #D7E3F8;" title="New: @deck.NewCount"></div>
+                                <div class="progress-bar" style="width: @(learnPct)%; background-color: #FFEE00;" title="Learning: @deck.LearningCount"></div>
+                                <div class="progress-bar" style="width: @(youngPct)%; background-color: #20409A;" title="Young (<21d): @deck.YoungCount"></div>
+                                <div class="progress-bar" style="width: @(maturePct)%; background-color: #050505;" title="Mature (21d+): @deck.MatureCount"></div>
+                                <div class="progress-bar" style="width: @(suspPct)%; background-color: #94A3B8;" title="Suspended: @deck.SuspendedCount"></div>
+                            </div>
+                            <div class="d-flex justify-content-between flex-wrap gap-2 mt-2 small" style="font-size: 0.75rem;">
+                                <span><strong style="color: #20409A;">● New:</strong> @deck.NewCount</span>
+                                <span><strong style="color: #997A00;">● Learning:</strong> @deck.LearningCount</span>
+                                <span><strong style="color: #20409A;">● Young:</strong> @deck.YoungCount</span>
+                                <span><strong style="color: #050505;">● Mature:</strong> @deck.MatureCount</span>
+                                <span><strong class="text-muted">● Suspended:</strong> @deck.SuspendedCount</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-auto pt-3 border-top">
+                            <button class="btn btn-brand-primary fw-bold btn-sm px-3" @onclick="() => StartDueStudySession(deck.Id)">
+                                ▶ Study Due (@deck.DueNowCount)
+                            </button>
+                            <button class="btn btn-sm fw-bold" style="background-color: #FFEE00; color: #050505; border: 1px solid #050505;" @onclick="() => OpenCramBuilder(deck.Id)">
+                                ⚡ Custom Cram
+                            </button>
+                            <button class="btn btn-outline-dark btn-sm fw-semibold" @onclick="() => OpenCardBrowser(deck.Id)">
+                                🗂️ Manage Cards (@deck.TotalCards)
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => OpenEditDeckModal(deck)">
+                                ⚙️ SM-2 Settings
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => ExportDeckAsync(deck)">
+                                📤 Export
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm ms-auto" @onclick="() => DeleteDeckAsync(deck.Id)">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else if (_activeView == "cram-setup" && ActiveDeck is not null)
+    {
+        <div class="card border-0 shadow-sm p-4 bg-white mx-auto" style="max-width: 680px; border-radius: 8px; border-top: 5px solid #FFEE00 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold text-dark m-0">⚡ Custom Study / Cram Session: @ActiveDeck.Name</h4>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="SwitchToDashboard">Back</button>
+            </div>
+            <p class="text-muted small">
+                Build an on-demand drill queue filtered by tag or maturity tier, independent of due dates.
+            </p>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">Filter by Tag</label>
+                    <select class="form-select" @bind="_cramTagFilter">
+                        @foreach (var tag in GetDeckTags(ActiveDeck))
+                        {
+                            <option @key="tag" value="@tag">@tag</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">Filter by Maturity Tier</label>
+                    <select class="form-select" @bind="_cramTierFilter">
+                        <option value="-1">All Active Tiers</option>
+                        <option value="0">New Only</option>
+                        <option value="1">Learning / Relearning Only</option>
+                        <option value="2">Young (&lt;21 days)</option>
+                        <option value="3">Mature (21+ days)</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">Maximum Cards in Session</label>
+                    <input type="number" class="form-control" min="1" max="200" @bind="_cramMaxCards" />
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="form-check p-2 border rounded w-100 bg-light">
+                        <input class="form-check-input ms-1 me-2" type="checkbox" id="cramReschedCheck" @bind="_cramReschedule" />
+                        <label class="form-check-label fw-semibold small" for="cramReschedCheck">
+                            Apply SM-2 reschedule on rating
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-outline-secondary" @onclick="SwitchToDashboard">Cancel</button>
+                <button class="btn btn-brand-primary fw-bold px-4" @onclick="LaunchCustomCramSession">
+                    🚀 Start Cram Session
+                </button>
+            </div>
+        </div>
+    }
+    else if (_activeView == "study" && ActiveDeck is not null)
+    {
+        <div class="mx-auto" style="max-width: 780px;">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <span class="badge me-2" style="background-color: #20409A; color: #FFFFFF;">@ActiveDeck.Name</span>
+                    @if (_isCramSession)
+                    {
+                        <span class="badge" style="background-color: #FFEE00; color: #050505; border: 1px solid #050505;">
+                            ⚡ Cram Mode (@(_cramReschedule ? "Rescheduling ON" : "Practice Only"))
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-dark text-white">📅 Scheduled Due Queue</span>
+                    }
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="fw-bold small text-dark">
+                        Progress: @_sessionCompletedCount completed &bull; @(Math.Max(0, _sessionQueue.Count - _sessionCurrentIndex)) remaining
+                    </span>
+                    <button class="btn btn-sm btn-outline-dark fw-semibold" @onclick="SwitchToDashboard">Exit Session</button>
+                </div>
+            </div>
+
+            @if (CurrentSessionCard is null)
+            {
+                <div class="card border-0 shadow-sm p-5 text-center bg-white" style="border-radius: 8px; border-top: 5px solid #20409A !important;">
+                    <div class="display-4 mb-2">🥋</div>
+                    <h3 class="fw-bold text-dark">Session Complete!</h3>
+                    <p class="text-muted mb-4">
+                        You completed <strong>@_sessionCompletedCount</strong> card reviews in <strong>@ActiveDeck.Name</strong>.
+                    </p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-brand-primary fw-bold px-4" @onclick="SwitchToDashboard">
+                            Return to Decks Dashboard
+                        </button>
+                        <button class="btn btn-outline-dark fw-bold" @onclick="() => OpenCramBuilder(ActiveDeck.Id)">
+                            ⚡ Run Custom Cram
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                var card = CurrentSessionCard;
+                var frontFields = card.FieldValues.Where(f => f.Side == 1).OrderBy(f => f.SortOrder).ToList();
+                var backFields = card.FieldValues.Where(f => f.Side == 2).OrderBy(f => f.SortOrder).ToList();
+
+                <div class="card border-0 shadow-sm p-4 bg-white mb-3" style="border-radius: 10px; border-top: 6px solid #20409A !important; min-height: 340px;">
+                    <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom">
+                        <span class="badge" style="@GetMaturityBadgeStyle(card.MaturityTier)">
+                            @GetMaturityLabel(card.MaturityTier)
+                        </span>
+                        <div class="d-flex gap-1 flex-wrap">
+                            @foreach (var tag in card.Tags)
+                            {
+                                <span @key="tag" class="badge bg-light text-dark border">#@tag</span>
+                            }
+                        </div>
+                        <span class="text-muted small">
+                            Interval: @card.IntervalDays d &bull; Ease: @card.EaseFactor
+                        </span>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="text-uppercase fw-bold small mb-2" style="color: #20409A; letter-spacing: 0.5px;">Front (Cue / Prompt)</div>
+                        @foreach (var field in frontFields)
+                        {
+                            <div @key="field.Id" class="mb-3">
+                                <div class="text-muted small fw-semibold">@field.FieldName</div>
+                                <div class="fs-5 fw-bold text-dark" style="white-space: pre-line;">@field.Value</div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (_isAnswerRevealed)
+                    {
+                        <div class="pt-3 border-top" style="border-top: 2px dashed #E2E8F0 !important;">
+                            <div class="text-uppercase fw-bold small mb-2" style="color: #997A00; letter-spacing: 0.5px;">Back (Response &amp; Mechanics)</div>
+                            @foreach (var field in backFields)
+                            {
+                                @if (!string.IsNullOrWhiteSpace(field.Value))
+                                {
+                                    <div @key="field.Id" class="mb-3">
+                                        <div class="text-muted small fw-semibold">@field.FieldName</div>
+                                        @if (field.FieldType == 3 && (field.Value.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || field.Value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)))
+                                        {
+                                            <a href="@field.Value" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary mt-1">
+                                                🎬 Open Reference Video (@field.Value)
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-dark" style="white-space: pre-line; font-size: 1.02rem;">@field.Value</div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mt-auto pt-4 text-center">
+                            <button class="btn btn-brand-primary btn-lg fw-bold px-5 shadow-sm" @onclick="RevealAnswer">
+                                👀 Reveal Answer
+                            </button>
+                        </div>
+                    }
+                </div>
+
+                @if (_isAnswerRevealed)
+                {
+                    <div class="row g-2">
+                        <div class="col-3">
+                            <button class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
+                                    style="background-color: #FFFFFF; color: #050505; border: 2px solid #050505;"
+                                    disabled="@_isSaving"
+                                    @onclick="() => RateCurrentCardAsync(1)">
+                                <span class="small text-muted">@card.IntervalPreview.Again</span>
+                                <span>1 &bull; Again</span>
+                            </button>
+                        </div>
+                        <div class="col-3">
+                            <button class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
+                                    style="background-color: #F8FAFC; color: #050505; border: 2px solid #20409A;"
+                                    disabled="@_isSaving"
+                                    @onclick="() => RateCurrentCardAsync(2)">
+                                <span class="small text-muted">@card.IntervalPreview.Hard</span>
+                                <span>2 &bull; Hard</span>
+                            </button>
+                        </div>
+                        <div class="col-3">
+                            <button class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
+                                    style="background-color: #20409A; color: #FFFFFF; border: 2px solid #20409A;"
+                                    disabled="@_isSaving"
+                                    @onclick="() => RateCurrentCardAsync(3)">
+                                <span class="small" style="color: #FFEE00;">@card.IntervalPreview.Good</span>
+                                <span>3 &bull; Good</span>
+                            </button>
+                        </div>
+                        <div class="col-3">
+                            <button class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
+                                    style="background-color: #FFEE00; color: #050505; border: 2px solid #050505;"
+                                    disabled="@_isSaving"
+                                    @onclick="() => RateCurrentCardAsync(4)">
+                                <span class="small fw-bold">@card.IntervalPreview.Easy</span>
+                                <span>4 &bull; Easy</span>
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    }
+    else if (_activeView == "cards" && ActiveDeck is not null)
+    {
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm p-3 bg-white" style="border-radius: 8px;">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div>
+                            <h5 class="fw-bold text-dark m-0">🗂️ Cards in @ActiveDeck.Name</h5>
+                            <span class="text-muted small">Template: @ActiveDeck.TemplateName</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-brand-primary fw-bold" @onclick="() => StartDueStudySession(ActiveDeck.Id)">
+                                ▶ Study Due
+                            </button>
+                            <button class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => InitializeCardEditor(null)">
+                                ➕ New Card
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control form-control-sm" placeholder="Search fields or tags..." @bind="_browserSearch" @bind:event="oninput" />
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select form-select-sm" @bind="_browserTagFilter">
+                                @foreach (var t in GetDeckTags(ActiveDeck))
+                                {
+                                    <option @key="t" value="@t">Tag: @t</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" @bind="_browserTierFilter">
+                                <option value="-1">All Tiers</option>
+                                <option value="0">New</option>
+                                <option value="1">Learning</option>
+                                <option value="2">Young</option>
+                                <option value="3">Mature</option>
+                                <option value="4">Suspended</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var card in FilteredBrowserCards)
+                        {
+                            var isEditing = _editingCardId == card.Id;
+                            <div @key="card.Id" class="p-3 border rounded @(isEditing ? "bg-light border-primary" : "bg-white")">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                                    <div class="fw-bold text-dark">@GetPrimaryPromptPreview(card)</div>
+                                    <span class="badge" style="@GetMaturityBadgeStyle(card.MaturityTier)">
+                                        @GetMaturityLabel(card.MaturityTier)
+                                    </span>
+                                </div>
+                                <div class="text-muted small mb-2 text-truncate">@GetPrimaryBackPreview(card)</div>
+
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2 border-top small">
+                                    <div class="d-flex gap-1 flex-wrap align-items-center">
+                                        <span class="text-muted">Due: @card.DueAt.ToString("MMM dd HH:mm")</span>
+                                        <span class="text-muted">&bull; Ivl: @card.IntervalDays d</span>
+                                        <span class="text-muted">&bull; Ease: @card.EaseFactor</span>
+                                        @foreach (var tag in card.Tags)
+                                        {
+                                            <span @key="tag" class="badge bg-light text-dark border">#@tag</span>
+                                        }
+                                    </div>
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        <button class="btn btn-sm btn-outline-dark py-0 px-2" @onclick="() => InitializeCardEditor(card)">Edit</button>
+                                        @if (card.State == 4)
+                                        {
+                                            <button class="btn btn-sm btn-outline-success py-0 px-2" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "unsuspend")'>Unsuspend</button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "suspend")'>Suspend</button>
+                                        }
+                                        <button class="btn btn-sm btn-outline-warning text-dark py-0 px-2" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "reset")'>Reset</button>
+                                        <button class="btn btn-sm btn-outline-primary py-0 px-2" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "reschedule", _manualRescheduleDays)'>+@(_manualRescheduleDays)d</button>
+                                        <button class="btn btn-sm btn-outline-danger py-0 px-2" @onclick="() => DeleteCardAsync(card.Id)">✕</button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm p-4 bg-white sticky-top" style="top: 1rem; border-radius: 8px; border-top: 5px solid #20409A !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-dark m-0">
+                            @(_editingCardId.HasValue ? "✏️ Edit Flashcard" : "➕ Create New Flashcard")
+                        </h5>
+                        @if (_editingCardId.HasValue)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => InitializeCardEditor(null)">Clear</button>
+                        }
+                    </div>
+
+                    @foreach (var field in _editingCardFields)
+                    {
+                        <div @key="field.FieldDefinitionId" class="mb-3">
+                            <label class="form-label fw-semibold small mb-1">
+                                <span class="badge me-1" style="background-color: @(field.Side == 1 ? "#20409A" : "#FFEE00"); color: @(field.Side == 1 ? "#FFFFFF" : "#050505");">
+                                    @(field.Side == 1 ? "FRONT" : "BACK")
+                                </span>
+                                @field.FieldName
+                                @if (field.IsRequired)
+                                {
+                                    <span class="text-danger">*</span>
+                                }
+                            </label>
+                            @if (field.FieldType == 2)
+                            {
+                                <textarea class="form-control form-control-sm" rows="3" @bind="field.Value"></textarea>
+                            }
+                            else
+                            {
+                                <input type="text" class="form-control form-control-sm" placeholder="@(field.FieldType == 3 ? "https://..." : "")" @bind="field.Value" />
+                            }
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small mb-1">Tags (comma-separated)</label>
+                        <input type="text" class="form-control form-control-sm" placeholder="guard, retention, dlr" @bind="_editingCardTags" />
+                    </div>
+
+                    <button class="btn btn-brand-primary fw-bold w-100" disabled="@_isSaving" @onclick="SaveCardAsync">
+                        💾 @(_editingCardId.HasValue ? "Update Flashcard" : "Add Flashcard to Deck")
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    else if (_activeView == "templates")
+    {
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm p-3 bg-white" style="border-radius: 8px;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-dark m-0">🧩 Card Field Templates</h5>
+                        <button class="btn btn-sm btn-brand-primary fw-bold" @onclick="StartNewTemplate">➕ New Template</button>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var t in _overview.Templates)
+                        {
+                            var isSelected = _editingTemplateId == t.Id;
+                            <div @key="t.Id"
+                                 class="p-3 border rounded"
+                                 style="cursor: pointer; @(isSelected ? "border: 2px solid #20409A !important; background-color: #EBF0FA;" : "")"
+                                 @onclick="() => SelectTemplateForEdit(t)">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-dark">@t.Name</span>
+                                    <span class="badge bg-dark text-white">@t.Fields.Count fields</span>
+                                </div>
+                                <div class="text-muted small mb-2">@t.Description</div>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    @foreach (var f in t.Fields)
+                                    {
+                                        <span @key="f.Id" class="badge" style="background-color: @(f.Side == 1 ? "#20409A" : "#FFEE00"); color: @(f.Side == 1 ? "#FFFFFF" : "#050505"); font-size: 0.7rem;">
+                                            @(f.Side == 1 ? "F" : "B"): @f.Name
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm p-4 bg-white" style="border-radius: 8px; border-top: 5px solid #20409A !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-dark m-0">
+                            @(_editingTemplateId.HasValue ? "✏️ Customize Template" : "➕ Create Custom Template")
+                        </h5>
+                        @if (_editingTemplateId.HasValue)
+                        {
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTemplateAsync(_editingTemplateId.Value)">
+                                🗑️ Delete Template
+                            </button>
+                        }
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Template Name</label>
+                            <input type="text" class="form-control" @bind="_templateName" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Description</label>
+                            <input type="text" class="form-control" @bind="_templateDescription" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold small text-dark">Ordered Fields (Front &amp; Back)</span>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => AddTemplateFieldRow(1)">+ Add Front Field</button>
+                            <button class="btn btn-sm btn-outline-dark" @onclick="() => AddTemplateFieldRow(2)">+ Add Back Field</button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        @foreach (var field in _templateFields)
+                        {
+                            <div @key="field.Id" class="row g-2 align-items-center p-2 border rounded bg-light">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control form-control-sm" placeholder="Field Name" @bind="field.Name" />
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select form-select-sm" @bind="field.Side">
+                                        <option value="1">Front (Prompt)</option>
+                                        <option value="2">Back (Answer)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select form-select-sm" @bind="field.FieldType">
+                                        <option value="1">Short Text</option>
+                                        <option value="2">Multiline Text</option>
+                                        <option value="3">Video URL</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex justify-content-between align-items-center">
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input" type="checkbox" @bind="field.IsRequired" title="Required" />
+                                        <label class="form-check-label small">Req</label>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger py-0 px-2" @onclick="() => RemoveTemplateFieldRow(field.Id)">✕</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <button class="btn btn-brand-primary fw-bold w-100" disabled="@_isSaving" @onclick="SaveTemplateAsync">
+                        💾 Save Field Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@if (_showDeckModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.55);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-top: 6px solid #20409A !important;">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-dark">
+                        @(_editingDeckId.HasValue ? "⚙️ Deck & SM-2 Algorithm Settings" : "➕ Create New Study Deck")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="() => _showDeckModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold small">Deck Name</label>
+                            <input type="text" class="form-control" @bind="_deckName" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small">Category</label>
+                            <input type="text" class="form-control" @bind="_deckCategory" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Card Field Template</label>
+                            <select class="form-select" @bind="_deckTemplateId">
+                                @if (_overview is not null)
+                                {
+                                    @foreach (var t in _overview.Templates)
+                                    {
+                                        <option @key="t.Id" value="@t.Id">@t.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">Description</label>
+                            <input type="text" class="form-control" @bind="_deckDescription" />
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">🎛️ Custom SM-2 Scheduling Parameters</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Learning Steps (minutes)</label>
+                            <input type="text" class="form-control form-control-sm" @bind="_optLearningSteps" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Graduating Interval (days)</label>
+                            <input type="number" class="form-control form-control-sm" min="1" @bind="_optGraduatingDays" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Easy Interval (days)</label>
+                            <input type="number" class="form-control form-control-sm" min="1" @bind="_optEasyDays" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Starting Ease Factor</label>
+                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optStartingEase" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Minimum Ease Factor</label>
+                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optMinimumEase" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Easy Bonus Multiplier</label>
+                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optEasyBonus" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Hard Interval Multiplier</label>
+                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optHardMultiplier" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Global Interval Modifier</label>
+                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optIntervalModifier" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Lapse Multiplier (0 = reset)</label>
+                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optLapseMultiplier" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Maximum Interval (days)</label>
+                            <input type="number" class="form-control form-control-sm" min="1" @bind="_optMaximumDays" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Daily New Cards Limit</label>
+                            <input type="number" class="form-control form-control-sm" min="0" @bind="_optDailyNewLimit" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Daily Review Limit</label>
+                            <input type="number" class="form-control form-control-sm" min="0" @bind="_optDailyReviewLimit" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" @onclick="() => _showDeckModal = false">Cancel</button>
+                    <button class="btn btn-brand-primary fw-bold" disabled="@_isSaving" @onclick="SaveDeckModalAsync">
+                        💾 Save Deck &amp; Schedule
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showJsonModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.55);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-top: 6px solid #FFEE00 !important;">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-dark">@_jsonModalTitle</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showJsonModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea class="form-control font-monospace small" rows="14" @bind="_jsonPayload" readonly="@(!_isImportMode)"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" @onclick="() => _showJsonModal = false">Close</button>
+                    @if (_isImportMode)
+                    {
+                        <button class="btn btn-brand-primary fw-bold" disabled="@_isSaving" @onclick="ConfirmImportJsonAsync">
+                            📥 Import Deck Package
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}

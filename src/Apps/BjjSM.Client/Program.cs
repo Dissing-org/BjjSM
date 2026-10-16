@@ -10,5 +10,6 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddScoped<BjjSM.Client.Services.IMemberApiClient, BjjSM.Client.Services.MemberApiClient>();
 builder.Services.AddScoped<BjjSM.Client.Services.ICurriculumApiClient, BjjSM.Client.Services.CurriculumApiClient>();
 builder.Services.AddScoped<BjjSM.Client.Services.IAnnualWheelApiClient, BjjSM.Client.Services.AnnualWheelApiClient>();
+builder.Services.AddScoped<BjjSM.Client.Services.ISpacedRepetitionApiClient, BjjSM.Client.Services.SpacedRepetitionApiClient>();
 
 await builder.Build().RunAsync();

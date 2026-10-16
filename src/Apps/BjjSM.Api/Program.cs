@@ -42,6 +42,7 @@ try
     builder.Services.AddScoped<IAnnualWheelRepository, AnnualWheelRepository>();
     builder.Services.AddScoped<ICurriculumThemeRepository, CurriculumThemeRepository>();
     builder.Services.AddScoped<IAnnualWheelService, AnnualWheelService>();
+    builder.Services.AddScoped<ISpacedRepetitionRepository, SpacedRepetitionRepository>();
 
     builder.Services.AddCors(options =>
     {
@@ -161,6 +162,21 @@ try
 
             curDb.MonthlyPlans.Add(plan);
             await curDb.SaveChangesAsync();
+        }
+
+        if (!await curDb.CardTemplates.AnyAsync())
+        {
+            var academyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            var defaultTemplates = BjjSM.Modules.Curriculum.Domain.SpacedRepetitionPresets.CreateDefaultTemplates(academyId);
+            curDb.CardTemplates.AddRange(defaultTemplates);
+            await curDb.SaveChangesAsync();
+
+            if (!await curDb.StudyDecks.AnyAsync())
+            {
+                var starterDecks = BjjSM.Modules.Curriculum.Domain.SpacedRepetitionPresets.CreateStarterDecks(academyId, defaultTemplates);
+                curDb.StudyDecks.AddRange(starterDecks);
+                await curDb.SaveChangesAsync();
+            }
         }
     }
 

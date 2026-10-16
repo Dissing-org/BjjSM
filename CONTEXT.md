@@ -30,3 +30,7 @@ This document serves as the project's canonical domain glossary. It contains ubi
 * **Weekly Focus:** The specific thematic breakdown for each week (Week 1 to Week 4/5) of the month.
 * **Technique / Drill:** A specific grappling maneuver, sequence, or drill attached to a Weekly Focus, including coaching notes and reference links (e.g., video URL).
 * **Published Plan Document:** The finalized, downloadable PDF syllabus generated from a Published Monthly Teaching Plan adhering to the brand design system.
+* **Card Template:** A customizable schema of named Front (prompt) and Back (answer/mechanics) fields (`CardFieldDefinition`) used to structure flashcards.
+* **Study Deck:** A collection of flashcards coupled with configurable SM-2 scheduling options (`DeckSchedulingOptions`).
+* **Flashcard:** A spaced-repetition item progressing through explicit lifecycle states (`New`, `Learning`, `Review`, `Relearning`, `Suspended`) and maturity tiers (`New`, `Learning`, `Young`, `Mature`, `Suspended`).
+* **Review Log:** A timestamped record of a practitioner rating a flashcard (`Again`, `Hard`, `Good`, `Easy`) during a scheduled due queue or custom cram session.
