@@ -23,4 +23,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <Target Name="TriggerSonarScanOnTest" AfterTargets="VSTest" Condition="'$(SonarQubeTargetsImported)' != 'true' AND '$(SkipAutoSonar)' != 'true'">
+    <Message Importance="high" Text="Running automatic SonarQube analysis via scripts/run-sonar-scan.ps1..." />
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)..\..\..\scripts\run-sonar-scan.ps1&quot;" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\.." ContinueOnError="WarnAndContinue" />
+  </Target>
+
 </Project>

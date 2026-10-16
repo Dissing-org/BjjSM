@@ -24,11 +24,10 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore BjjSM.slnx
 
-      - name: Build Solution
-        run: dotnet build BjjSM.slnx --configuration Release --no-restore
-
-      - name: Run Tests
-        run: dotnet test BjjSM.slnx --configuration Release --no-build --verbosity normal
+      - name: Build, Test & Run SonarQube Scan
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-sonar-scan.ps1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   docker-publish:
     name: Build & Publish to Docker Hub
