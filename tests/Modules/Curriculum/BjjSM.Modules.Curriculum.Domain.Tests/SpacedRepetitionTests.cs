@@ -208,6 +208,26 @@ public class SpacedRepetitionTests
         Assert.All(decks, d => Assert.True(d.Cards.Count >= 4));
     }
 
+    [Fact]
+    public void SpacedRepetitionPresets_CreateStarterDecks_ShouldIncludeTechniqueGifsOnAllCards()
+    {
+        var templates = SpacedRepetitionPresets.CreateDefaultTemplates(_academyId);
+        var decks = SpacedRepetitionPresets.CreateStarterDecks(_academyId, templates);
+
+        Assert.Equal(2, decks.Count);
+        var allCards = decks.SelectMany(d => d.Cards).ToList();
+        Assert.Equal(8, allCards.Count);
+
+        foreach (var card in allCards)
+        {
+            var imageField = card.FieldValues.FirstOrDefault(f => f.FieldType == CardFieldType.ImageUrl);
+            Assert.NotNull(imageField);
+            Assert.False(string.IsNullOrWhiteSpace(imageField.Value));
+            Assert.StartsWith("images/techniques/", imageField.Value);
+            Assert.EndsWith(".gif", imageField.Value);
+        }
+    }
+
     private StudyDeck CreateSampleDeck(DeckSchedulingOptions options)
     {
         var templateId = Guid.NewGuid();

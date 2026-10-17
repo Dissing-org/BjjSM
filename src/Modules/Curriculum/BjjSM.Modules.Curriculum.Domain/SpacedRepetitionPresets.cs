@@ -6,6 +6,25 @@ public static class SpacedRepetitionPresets
     public static readonly Guid PositionalCounterTemplateId = Guid.Parse("70000000-0000-0000-0000-000000000002");
     public static readonly Guid SubmissionMechanicsTemplateId = Guid.Parse("70000000-0000-0000-0000-000000000003");
 
+    public static readonly Guid GuardRetentionDeckId = Guid.Parse("80000000-0000-0000-0000-000000000001");
+    public static readonly Guid SubmissionsDeckId = Guid.Parse("80000000-0000-0000-0000-000000000002");
+
+    public static readonly Guid StandardImageFieldId = Guid.Parse("71000000-0000-0000-0000-000000000004");
+    public static readonly Guid PositionalImageFieldId = Guid.Parse("72000000-0000-0000-0000-000000000006");
+    public static readonly Guid SubmissionImageFieldId = Guid.Parse("73000000-0000-0000-0000-000000000005");
+
+    public static class TechniqueGifs
+    {
+        public const string DeLaRivaSingleLegX = "images/techniques/dlr-single-leg-x.gif";
+        public const string KneeShieldShoulderCrunch = "images/techniques/knee-shield-shoulder-crunch.gif";
+        public const string OpenGuardGranbyRecovery = "images/techniques/open-guard-granby-recovery.gif";
+        public const string ClosedGuardHipBump = "images/techniques/closed-guard-hip-bump.gif";
+        public const string RearNakedChoke = "images/techniques/rear-naked-choke.gif";
+        public const string ArmbarFromMount = "images/techniques/armbar-from-mount.gif";
+        public const string TriangleChokeGuard = "images/techniques/triangle-choke-guard.gif";
+        public const string InsideHeelHook = "images/techniques/inside-heel-hook.gif";
+    }
+
     public static IReadOnlyList<CardTemplate> CreateDefaultTemplates(Guid academyId)
     {
         var standard = CardTemplate.Create(
@@ -16,7 +35,8 @@ public static class SpacedRepetitionPresets
             [
                 new CardFieldDefinition(Guid.Parse("71000000-0000-0000-0000-000000000001"), "Prompt / Question", CardFieldSide.Front, CardFieldType.Text, true, 1),
                 new CardFieldDefinition(Guid.Parse("71000000-0000-0000-0000-000000000002"), "Answer", CardFieldSide.Back, CardFieldType.MultilineText, true, 2),
-                new CardFieldDefinition(Guid.Parse("71000000-0000-0000-0000-000000000003"), "Coaching Notes", CardFieldSide.Back, CardFieldType.MultilineText, false, 3)
+                new CardFieldDefinition(Guid.Parse("71000000-0000-0000-0000-000000000003"), "Coaching Notes", CardFieldSide.Back, CardFieldType.MultilineText, false, 3),
+                new CardFieldDefinition(StandardImageFieldId, "Technique Illustration / GIF", CardFieldSide.Back, CardFieldType.ImageUrl, false, 4)
             ]).Value;
 
         var positional = CardTemplate.Create(
@@ -29,7 +49,8 @@ public static class SpacedRepetitionPresets
                 new CardFieldDefinition(Guid.Parse("72000000-0000-0000-0000-000000000002"), "Opponent Reaction / Trigger", CardFieldSide.Front, CardFieldType.MultilineText, true, 2),
                 new CardFieldDefinition(Guid.Parse("72000000-0000-0000-0000-000000000003"), "Primary Counter Technique", CardFieldSide.Back, CardFieldType.Text, true, 3),
                 new CardFieldDefinition(Guid.Parse("72000000-0000-0000-0000-000000000004"), "Key Grips & Wedges", CardFieldSide.Back, CardFieldType.MultilineText, true, 4),
-                new CardFieldDefinition(Guid.Parse("72000000-0000-0000-0000-000000000005"), "Reference Video URL", CardFieldSide.Back, CardFieldType.VideoUrl, false, 5)
+                new CardFieldDefinition(Guid.Parse("72000000-0000-0000-0000-000000000005"), "Reference Video URL", CardFieldSide.Back, CardFieldType.VideoUrl, false, 5),
+                new CardFieldDefinition(PositionalImageFieldId, "Technique Illustration / GIF", CardFieldSide.Back, CardFieldType.ImageUrl, false, 6)
             ]).Value;
 
         var submission = CardTemplate.Create(
@@ -41,7 +62,8 @@ public static class SpacedRepetitionPresets
                 new CardFieldDefinition(Guid.Parse("73000000-0000-0000-0000-000000000001"), "Submission & Entry", CardFieldSide.Front, CardFieldType.Text, true, 1),
                 new CardFieldDefinition(Guid.Parse("73000000-0000-0000-0000-000000000002"), "Defensive Obstacle", CardFieldSide.Front, CardFieldType.Text, false, 2),
                 new CardFieldDefinition(Guid.Parse("73000000-0000-0000-0000-000000000003"), "Breaking Mechanics & Control Wedges", CardFieldSide.Back, CardFieldType.MultilineText, true, 3),
-                new CardFieldDefinition(Guid.Parse("73000000-0000-0000-0000-000000000004"), "Follow-Up Transition", CardFieldSide.Back, CardFieldType.MultilineText, false, 4)
+                new CardFieldDefinition(Guid.Parse("73000000-0000-0000-0000-000000000004"), "Follow-Up Transition", CardFieldSide.Back, CardFieldType.MultilineText, false, 4),
+                new CardFieldDefinition(SubmissionImageFieldId, "Technique Illustration / GIF", CardFieldSide.Back, CardFieldType.ImageUrl, false, 5)
             ]).Value;
 
         return [standard, positional, submission];
@@ -54,7 +76,7 @@ public static class SpacedRepetitionPresets
         var submissionTemplate = templates.FirstOrDefault(t => t.Id == SubmissionMechanicsTemplateId) ?? templates.Last();
 
         var guardDeck = StudyDeck.Create(
-            Guid.Parse("80000000-0000-0000-0000-000000000001"),
+            GuardRetentionDeckId,
             academyId,
             positionalTemplate.Id,
             "Guard Retention & Open Guard Counters",
@@ -70,6 +92,7 @@ public static class SpacedRepetitionPresets
             "Technical Unbalance to Single Leg X / X-Guard",
             "Switch collar grip to far sleeve or pant cuff, pummel outside foot onto hip, extend DLR hook overhead to float passer's weight.",
             "https://youtube.com",
+            TechniqueGifs.DeLaRivaSingleLegX,
             ["guard", "dlr", "headquarters"],
             now);
 
@@ -81,6 +104,7 @@ public static class SpacedRepetitionPresets
             "High Knee Shield Frame & Shoulder Crunch Sweep",
             "Reinforce top knee frame with elbow-to-knee connection, pummel underhook or overhook-pinch on weaving arm, hip escape to re-center angle.",
             null,
+            TechniqueGifs.KneeShieldShoulderCrunch,
             ["half-guard", "knee-shield", "retention"],
             now);
 
@@ -92,6 +116,7 @@ public static class SpacedRepetitionPresets
             "High-Leg Over & Self-Frame Granby Recovery",
             "Anchor bottom elbow inside hip line, C-grip own shin or pant leg to prevent chest-to-chest contact, lasso high leg over passer's far shoulder.",
             null,
+            TechniqueGifs.OpenGuardGranbyRecovery,
             ["retention", "toreando", "granby"],
             now);
 
@@ -100,14 +125,15 @@ public static class SpacedRepetitionPresets
             positionalTemplate,
             "Closed Guard Offense",
             "Opponent postures up with stiff frames on the hips and steps one knee up into combat base.",
-            "Kuzushi Hip Bump to Kimberley / Guillotine / Triangle",
+            "Kuzushi Hip Bump to Kimura / Guillotine / Triangle",
             "Swim inside wrist control, post on hand as opponent leans back, explode hips into their chest or snap down into high-elbow guillotine.",
             null,
+            TechniqueGifs.ClosedGuardHipBump,
             ["closed-guard", "dilemma", "sweeps"],
             now);
 
         var subDeck = StudyDeck.Create(
-            Guid.Parse("80000000-0000-0000-0000-000000000002"),
+            SubmissionsDeckId,
             academyId,
             submissionTemplate.Id,
             "High-Percentage Submissions & Finishing Details",
@@ -118,10 +144,11 @@ public static class SpacedRepetitionPresets
         AddSubmissionCard(
             subDeck,
             submissionTemplate,
-            "Rear NakedStrangle (Mata Leão) from Back Control",
+            "Rear Naked Strangle (Mata Leão) from Back Control",
             "Defender tucks chin tightly and two-on-ones the choking forearm.",
             "Use straight-jacket system to trap secondary arm with bottom leg; blade choking wrist under mandible line, lock bicep grip, expand chest and draw choking elbow back in a rotational arc.",
-            "Switch to Mandible Strangle or transition to dorsal Kimora / Armbar from back mount.",
+            "Switch to Mandible Strangle or transition to dorsal Kimura / Armbar from back mount.",
+            TechniqueGifs.RearNakedChoke,
             ["back-attack", "rnc", "strangle"],
             now);
 
@@ -130,8 +157,9 @@ public static class SpacedRepetitionPresets
             submissionTemplate,
             "Juji-Gatame (Armbar) from Top / Mount",
             "Defender locks a Rear-Naked-Style figure-four grip to prevent arm extension.",
-            "Pin knees tightly together with heels flared down; thread Kimberley grip through defender's elbow pit, hug trapped wrist to your sternum, and break towards the pinky finger before extending hips.",
+            "Pin knees tightly together with heels flared down; thread Kimura grip through defender's elbow pit, hug trapped wrist to your sternum, and break towards the pinky finger before extending hips.",
             "Mount Triangle or Back Take as defender rolls onto their side.",
+            TechniqueGifs.ArmbarFromMount,
             ["armbar", "mount", "grip-break"],
             now);
 
@@ -142,6 +170,7 @@ public static class SpacedRepetitionPresets
             "Opponent postures tall and hides the far shoulder outside the strangle.",
             "Control own shin before unlocking ankles, post free foot on hip, cut a 90-degree perpendicular angle until you see opponent's ear, lock figure-four over the Achilles tendon and flare knees.",
             "Transition directly to Juji-Gatame or Omoplata sweep.",
+            TechniqueGifs.TriangleChokeGuard,
             ["triangle", "guard", "strangle"],
             now);
 
@@ -152,6 +181,7 @@ public static class SpacedRepetitionPresets
             "Opponent attempts to boot the foot and hide the heel against the mat.",
             "Secure knee-line clamp with triangulated legs, use wrist bone beneath calcaneus (watch-strap grip), curl hamstring to expose the heel, and bridge hips through the knee ligament line.",
             "Aoki Lock or transition to Cloverleaf / backside 50-50.",
+            TechniqueGifs.InsideHeelHook,
             ["leg-locks", "saddle", "heel-hook"],
             now);
 
@@ -166,6 +196,7 @@ public static class SpacedRepetitionPresets
         string counter,
         string mechanics,
         string? videoUrl,
+        string? imageUrl,
         string[] tags,
         DateTime now)
     {
@@ -176,7 +207,8 @@ public static class SpacedRepetitionPresets
             new(Guid.NewGuid(), fields[1].Id, fields[1].Name, fields[1].Side, fields[1].FieldType, reaction, 2),
             new(Guid.NewGuid(), fields[2].Id, fields[2].Name, fields[2].Side, fields[2].FieldType, counter, 3),
             new(Guid.NewGuid(), fields[3].Id, fields[3].Name, fields[3].Side, fields[3].FieldType, mechanics, 4),
-            new(Guid.NewGuid(), fields[4].Id, fields[4].Name, fields[4].Side, fields[4].FieldType, videoUrl ?? string.Empty, 5)
+            new(Guid.NewGuid(), fields[4].Id, fields[4].Name, fields[4].Side, fields[4].FieldType, videoUrl ?? string.Empty, 5),
+            new(Guid.NewGuid(), fields[5].Id, fields[5].Name, fields[5].Side, fields[5].FieldType, imageUrl ?? string.Empty, 6)
         };
         deck.AddCard(Guid.NewGuid(), template.Id, tags, values, now);
     }
@@ -188,6 +220,7 @@ public static class SpacedRepetitionPresets
         string obstacle,
         string mechanics,
         string followUp,
+        string? imageUrl,
         string[] tags,
         DateTime now)
     {
@@ -197,7 +230,8 @@ public static class SpacedRepetitionPresets
             new(Guid.NewGuid(), fields[0].Id, fields[0].Name, fields[0].Side, fields[0].FieldType, entry, 1),
             new(Guid.NewGuid(), fields[1].Id, fields[1].Name, fields[1].Side, fields[1].FieldType, obstacle, 2),
             new(Guid.NewGuid(), fields[2].Id, fields[2].Name, fields[2].Side, fields[2].FieldType, mechanics, 3),
-            new(Guid.NewGuid(), fields[3].Id, fields[3].Name, fields[3].Side, fields[3].FieldType, followUp, 4)
+            new(Guid.NewGuid(), fields[3].Id, fields[3].Name, fields[3].Side, fields[3].FieldType, followUp, 4),
+            new(Guid.NewGuid(), fields[4].Id, fields[4].Name, fields[4].Side, fields[4].FieldType, imageUrl ?? string.Empty, 5)
         };
         deck.AddCard(Guid.NewGuid(), template.Id, tags, values, now);
     }

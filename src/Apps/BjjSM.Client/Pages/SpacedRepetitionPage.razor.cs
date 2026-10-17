@@ -9,6 +9,9 @@ public partial class SpacedRepetitionPage : ComponentBase
     [Inject]
     private ISpacedRepetitionApiClient Api { get; set; } = default!;
 
+    [Inject]
+    private Microsoft.JSInterop.IJSRuntime JsRuntime { get; set; } = default!;
+
     private readonly Guid _academyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     private SpacedRepetitionOverviewDto? _overview;
@@ -787,5 +790,44 @@ public partial class SpacedRepetitionPage : ComponentBase
             .FirstOrDefault();
 
         return firstBack?.Value ?? "(Empty Back)";
+    }
+
+    private static string GetCardTitle(FlashcardDto? card)
+    {
+        if (card is null) return "BJJ Technique";
+        return GetPrimaryPromptPreview(card);
+    }
+
+    private async Task ResetStarterDecksAsync()
+    {
+        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm",
+            new object[] { "Reset starter decks to default factory presets? This will reinstate all 8 technique GIFs and reset starter card intervals. Custom decks will not be affected." });
+
+        if (!confirmed) return;
+
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+        try
+        {
+            var result = await Api.ResetStarterDecksAsync(_academyId);
+            if (result.IsSuccess)
+            {
+                _overview = result.Value;
+                _successMessage = "Starter decks successfully restored to factory presets.";
+            }
+            else
+            {
+                _errorMessage = result.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to reset starter decks: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
     }
 }

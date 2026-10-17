@@ -43,6 +43,7 @@ try
     builder.Services.AddScoped<ICurriculumThemeRepository, CurriculumThemeRepository>();
     builder.Services.AddScoped<IAnnualWheelService, AnnualWheelService>();
     builder.Services.AddScoped<ISpacedRepetitionRepository, SpacedRepetitionRepository>();
+    builder.Services.AddScoped<ISpacedRepetitionSeedService, SpacedRepetitionSeedService>();
 
     builder.Services.AddCors(options =>
     {
@@ -164,20 +165,9 @@ try
             await curDb.SaveChangesAsync();
         }
 
-        if (!await curDb.CardTemplates.AnyAsync())
-        {
-            var academyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-            var defaultTemplates = BjjSM.Modules.Curriculum.Domain.SpacedRepetitionPresets.CreateDefaultTemplates(academyId);
-            curDb.CardTemplates.AddRange(defaultTemplates);
-            await curDb.SaveChangesAsync();
-
-            if (!await curDb.StudyDecks.AnyAsync())
-            {
-                var starterDecks = BjjSM.Modules.Curriculum.Domain.SpacedRepetitionPresets.CreateStarterDecks(academyId, defaultTemplates);
-                curDb.StudyDecks.AddRange(starterDecks);
-                await curDb.SaveChangesAsync();
-            }
-        }
+        var seeder = scope.ServiceProvider.GetRequiredService<BjjSM.Modules.Curriculum.Application.ISpacedRepetitionSeedService>();
+        var defaultAcademyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        await seeder.EnsurePresetsAndBackfillAsync(defaultAcademyId);
     }
 
     await app.RunAsync();

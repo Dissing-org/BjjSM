@@ -10,7 +10,8 @@ public enum CardFieldType
 {
     Text = 1,
     MultilineText = 2,
-    VideoUrl = 3
+    VideoUrl = 3,
+    ImageUrl = 4
 }
 
 public enum CardState

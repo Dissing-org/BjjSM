@@ -953,3 +953,42 @@ public sealed class ImportStudyDeckEndpoint : Endpoint<DeckExportPackage, StudyD
         await Send.OkAsync(SpacedRepetitionMapper.ToResponse(deck, templateMap, nowUtc), ct);
     }
 }
+
+public sealed class ResetStarterDecksEndpoint : EndpointWithoutRequest<SpacedRepetitionOverviewResponse>
+{
+    private readonly ISpacedRepetitionSeedService _seedService;
+    private readonly ISpacedRepetitionRepository _repository;
+
+    public ResetStarterDecksEndpoint(ISpacedRepetitionSeedService seedService, ISpacedRepetitionRepository repository)
+    {
+        _seedService = seedService;
+        _repository = repository;
+    }
+
+    public override void Configure()
+    {
+        Post("/api/spaced-repetition/starter-decks/reset", "/api/curriculum/spaced-repetition/starter-decks/reset");
+        AllowAnonymous();
+    }
+
+    public override async Task HandleAsync(CancellationToken ct)
+    {
+        var academyId = Query<Guid?>("academyId", isRequired: false) ?? SpacedRepetitionMapper.DefaultAcademyId;
+        var resetResult = await _seedService.ResetStarterDecksAsync(academyId, ct);
+
+        if (resetResult.IsFailure)
+        {
+            AddError(resetResult.Error);
+            await Send.ErrorsAsync(400, ct);
+            return;
+        }
+
+        var templates = await _repository.GetTemplatesAsync(academyId, ct);
+        var decks = await _repository.GetDecksAsync(academyId, ct);
+        var logs = await _repository.GetReviewLogsAsync(academyId, null, ct);
+
+        var overview = SpacedRepetitionMapper.BuildOverview(templates, decks, logs, DateTime.UtcNow);
+        await Send.OkAsync(overview, ct);
+    }
+}
+

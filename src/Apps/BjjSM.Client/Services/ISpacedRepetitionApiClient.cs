@@ -20,4 +20,5 @@ public interface ISpacedRepetitionApiClient
 
     Task<Result<string>> ExportDeckJsonAsync(Guid deckId, CancellationToken ct = default);
     Task<Result<StudyDeckDto>> ImportDeckJsonAsync(string rawJson, CancellationToken ct = default);
+    Task<Result<SpacedRepetitionOverviewDto>> ResetStarterDecksAsync(Guid academyId, CancellationToken ct = default);
 }

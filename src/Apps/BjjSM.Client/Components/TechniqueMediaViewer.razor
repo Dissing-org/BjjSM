@@ -1,0 +1,57 @@
+@namespace BjjSM.Client.Components
+
+@if (!string.IsNullOrWhiteSpace(ImageUrl))
+{
+    <div class="technique-media-container">
+        <div class="technique-thumbnail-card" @onclick="OpenLightbox" title="Click to view technique animation full screen">
+            <img src="@ImageUrl" alt="@TechniqueTitle" class="technique-gif-img" loading="lazy" />
+            <div class="technique-zoom-overlay">
+                <span class="badge" style="background-color: #FFEE00; color: #050505; font-weight: 800; border: 1px solid #050505;">
+                    🔍 EXPAND
+                </span>
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(VideoUrl) && (VideoUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || VideoUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+{
+    <div class="mt-2">
+        <a href="@VideoUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm fw-semibold"
+           style="background-color: #EBF0FA; color: #20409A; border: 1px solid #20409A;">
+            🎬 External Video Analysis (@VideoUrl)
+        </a>
+    </div>
+}
+
+@if (_isLightboxOpen)
+{
+    <div class="technique-lightbox-backdrop" @onclick="CloseLightbox" tabindex="-1">
+        <div class="technique-lightbox-dialog" @onclick:stopPropagation="true">
+            <div class="technique-lightbox-header d-flex justify-content-between align-items-center">
+                <h6 class="m-0 fw-bold text-white text-uppercase" style="letter-spacing: 0.5px;">
+                    🥋 @TechniqueTitle
+                </h6>
+                <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseLightbox"></button>
+            </div>
+            <div class="technique-lightbox-body text-center bg-black p-2">
+                <img src="@ImageUrl" alt="@TechniqueTitle" class="img-fluid technique-lightbox-img" />
+            </div>
+            <div class="technique-lightbox-footer d-flex justify-content-between align-items-center p-2 bg-light">
+                <span class="small text-muted">Continuous loop &bull; Martial arts biomechanical demonstration</span>
+                <button class="btn btn-sm btn-outline-dark fw-bold" @onclick="CloseLightbox">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string? ImageUrl { get; set; }
+    [Parameter] public string? VideoUrl { get; set; }
+    [Parameter] public string TechniqueTitle { get; set; } = "BJJ Technique";
+
+    private bool _isLightboxOpen;
+
+    private void OpenLightbox() => _isLightboxOpen = true;
+    private void CloseLightbox() => _isLightboxOpen = false;
+}

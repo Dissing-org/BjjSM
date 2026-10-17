@@ -162,6 +162,18 @@ public sealed class SpacedRepetitionApiClient : ISpacedRepetitionApiClient
             : Result.Failure<StudyDeckDto>("Failed to deserialize imported deck.");
     }
 
+    public async Task<Result<SpacedRepetitionOverviewDto>> ResetStarterDecksAsync(Guid academyId, CancellationToken ct = default)
+    {
+        var response = await _http.PostAsync($"/api/spaced-repetition/starter-decks/reset?academyId={academyId}", null, ct);
+        if (!response.IsSuccessStatusCode)
+            return Result.Failure<SpacedRepetitionOverviewDto>(await ExtractErrorMessageAsync(response));
+
+        var dto = await response.Content.ReadFromJsonAsync<SpacedRepetitionOverviewDto>(JsonOptions, ct);
+        return dto is not null
+            ? Result.Success(dto)
+            : Result.Failure<SpacedRepetitionOverviewDto>("Failed to deserialize reset overview response.");
+    }
+
     private static async Task<string> ExtractErrorMessageAsync(HttpResponseMessage response)
     {
         try

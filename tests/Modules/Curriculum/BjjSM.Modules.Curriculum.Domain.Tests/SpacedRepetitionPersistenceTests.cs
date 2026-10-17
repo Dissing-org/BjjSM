@@ -131,6 +131,39 @@ public class SpacedRepetitionPersistenceTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task EnsurePresetsAndBackfillAsync_ShouldNonDestructivelyPopulateGifs_PreservingSm2Progress()
+    {
+        var academyId = Guid.NewGuid();
+        var seeder = new SpacedRepetitionSeedService(new CurriculumDbContext(_options));
+        
+        await seeder.EnsurePresetsAndBackfillAsync(academyId);
+
+        await using (var context = new CurriculumDbContext(_options))
+        {
+            var deck = await context.StudyDecks.Include(d => d.Cards).ThenInclude(c => c.FieldValues).FirstAsync(d => d.AcademyId == academyId);
+            var card = deck.Cards.First();
+            
+            card.RescheduleManual(14, DateTime.UtcNow.AddDays(14));
+            await context.SaveChangesAsync();
+        }
+
+        await seeder.EnsurePresetsAndBackfillAsync(academyId);
+
+        await using (var context = new CurriculumDbContext(_options))
+        {
+            var deck = await context.StudyDecks.Include(d => d.Cards).ThenInclude(c => c.FieldValues).FirstAsync(d => d.AcademyId == academyId);
+            var card = deck.Cards.First();
+
+            Assert.Equal(CardState.Review, card.State);
+            Assert.Equal(14.0, card.IntervalDays);
+            var img = card.FieldValues.FirstOrDefault(f => f.FieldType == CardFieldType.ImageUrl);
+            Assert.NotNull(img);
+            Assert.False(string.IsNullOrWhiteSpace(img.Value));
+            Assert.StartsWith("images/techniques/", img.Value);
+        }
+    }
+
     public void Dispose()
     {
         _connection.Dispose();
