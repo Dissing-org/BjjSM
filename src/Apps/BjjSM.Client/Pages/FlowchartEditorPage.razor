@@ -25,7 +25,7 @@ else if (!string.IsNullOrEmpty(_errorMessage))
 }
 else if (_flowchart is not null)
 {
-    <div class="flowchart-editor-container d-flex flex-column h-100" style="min-height: calc(100vh - 80px);">
+    <div class="flowchart-editor-container" style="height: calc(100dvh - 56px); overflow: hidden; display: flex; flex-direction: column;">
         <!-- Top Toolbar -->
         <div class="editor-toolbar bg-white border-bottom p-2 d-flex justify-content-between align-items-center flex-wrap gap-2 shadow-sm">
             <div class="d-flex align-items-center gap-3">
@@ -98,14 +98,15 @@ else if (_flowchart is not null)
         }
 
         <!-- Interactive Canvas Area -->
-        <div class="canvas-wrapper flex-grow-1 position-relative overflow-hidden"
-             style="background-color: #F8FAFC; background-image: radial-gradient(#CBD5E1 1px, transparent 1px); background-size: 24px 24px; min-height: 650px;"
-             @onmousedown="OnCanvasMouseDown"
-             @onmousemove="OnCanvasMouseMove"
-             @onmouseup="OnCanvasMouseUp"
+        <div class="canvas-wrapper position-relative overflow-hidden"
+             style="background-color: #F8FAFC; background-image: radial-gradient(#CBD5E1 1px, transparent 1px); background-size: 24px 24px; touch-action: none; overscroll-behavior: none; user-select: none; -webkit-user-select: none; flex: 1 1 0; min-height: 0; width: 100%; height: 100%; position: relative; overflow: hidden;"
+             @onpointerdown="OnCanvasPointerDown"
+             @onpointermove="OnCanvasPointerMove"
+             @onpointerup="OnCanvasPointerUp"
+             @onpointercancel="OnCanvasPointerCancel"
              @onwheel="OnCanvasWheel">
 
-            <svg id="bjj-flowchart-svg" class="w-100 h-100 position-absolute" style="top: 0; left: 0; cursor: @(_isConnectingMode ? "crosshair" : (_isPanning ? "grabbing" : "grab")); user-select: none;">
+            <svg id="bjj-flowchart-svg" class="w-100 h-100 position-absolute" style="top: 0; left: 0; touch-action: none; cursor: @(_isConnectingMode ? "crosshair" : (_isPanning ? "grabbing" : "grab")); user-select: none;">
                 <defs>
                     <!-- Arrow markers -->
                     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
@@ -132,8 +133,8 @@ else if (_flowchart is not null)
                         var markerId = isSelected ? "url(#arrowhead-selected)" : (isSubmission ? "url(#arrowhead-gold)" : "url(#arrowhead)");
 
                         <g class="flowchart-edge" style="cursor: pointer;" @onclick="() => SelectEdge(edge)" @onclick:stopPropagation="true">
-                            <!-- Background thick line for easy clicking -->
-                            <path d="@pathData" fill="none" stroke="transparent" stroke-width="16" />
+                            <!-- Background thick line for easy clicking & touch tapping -->
+                            <path d="@pathData" fill="none" stroke="transparent" stroke-width="32" pointer-events="stroke" />
 
                             <!-- Actual edge stroke -->
                             <path d="@pathData"
@@ -174,9 +175,9 @@ else if (_flowchart is not null)
 
                         <g class="flowchart-node"
                            transform="translate(@(node.X.ToString(CultureInfo.InvariantCulture)), @(node.Y.ToString(CultureInfo.InvariantCulture)))"
-                           style="cursor: @(_isConnectingMode ? "crosshair" : "move");"
-                           @onmousedown="(e) => OnNodeMouseDown(node, e)"
-                           @onmousedown:stopPropagation="true"
+                           style="touch-action: none; cursor: @(_isConnectingMode ? "crosshair" : "move");"
+                           @onpointerdown="(e) => OnNodePointerDown(node, e)"
+                           @onpointerdown:stopPropagation="true"
                            @onclick="() => HandleNodeClick(node)"
                            @onclick:stopPropagation="true">
 

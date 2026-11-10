@@ -42,6 +42,17 @@ public partial class FlowchartEditorPage : ComponentBase
     protected double _dragStartX;
     protected double _dragStartY;
 
+    // Pointer & Multi-touch state
+    protected readonly Dictionary<long, (double X, double Y)> _activePointers = new();
+    protected double _initialPinchDistance = 0;
+    protected double _initialPinchZoom = 1.0;
+
+    // Drag slop threshold state
+    protected const double DragThreshold = 6.0;
+    protected double _downClientX;
+    protected double _downClientY;
+    protected bool _hasDragged;
+
     // Node drag state
     protected FlowchartNodeDto? _draggingNode;
     protected double _nodeDragOffsetX;
@@ -99,6 +110,12 @@ public partial class FlowchartEditorPage : ComponentBase
 
     protected void HandleNodeClick(FlowchartNodeDto node)
     {
+        if (_hasDragged)
+        {
+            _hasDragged = false;
+            return;
+        }
+
         if (_isConnectingMode)
         {
             if (!_selectedSourceNodeId.HasValue)
@@ -110,7 +127,6 @@ public partial class FlowchartEditorPage : ComponentBase
                 var sourceId = _selectedSourceNodeId.Value;
                 var targetId = node.Id;
 
-                // Calculate default curve offset if edges between these nodes already exist
                 var existingParallelEdges = _edges.Count(e =>
                     (e.SourceNodeId == sourceId && e.TargetNodeId == targetId) ||
                     (e.SourceNodeId == targetId && e.TargetNodeId == sourceId));
@@ -144,6 +160,11 @@ public partial class FlowchartEditorPage : ComponentBase
 
     protected void SelectEdge(FlowchartEdgeDto edge)
     {
+        if (_hasDragged)
+        {
+            return;
+        }
+
         if (!_isConnectingMode)
         {
             _selectedEdge = edge;
@@ -153,7 +174,6 @@ public partial class FlowchartEditorPage : ComponentBase
 
     protected void AddPositionNode()
     {
-        // Position near center of current view
         var centerX = (-_panX + 300) / _zoom;
         var centerY = (-_panY + 200) / _zoom;
 
@@ -195,10 +215,15 @@ public partial class FlowchartEditorPage : ComponentBase
         MarkDirty();
     }
 
-    // Canvas Mouse & Wheel Handlers
-    protected void OnCanvasMouseDown(MouseEventArgs e)
+    // Canvas Pointer & Wheel Handlers
+    protected void OnCanvasPointerDown(PointerEventArgs e)
     {
-        if (e.Button == 0 && _draggingNode is null)
+        _activePointers[e.PointerId] = (e.ClientX, e.ClientY);
+        _hasDragged = false;
+        _downClientX = e.ClientX;
+        _downClientY = e.ClientY;
+
+        if (_activePointers.Count == 1 && e.Button == 0 && _draggingNode is null)
         {
             _isPanning = true;
             _dragStartX = e.ClientX - _panX;
@@ -206,10 +231,55 @@ public partial class FlowchartEditorPage : ComponentBase
             _selectedNode = null;
             _selectedEdge = null;
         }
+        else if (_activePointers.Count == 2)
+        {
+            var pts = _activePointers.Values.ToArray();
+            var dx = pts[0].X - pts[1].X;
+            var dy = pts[0].Y - pts[1].Y;
+            _initialPinchDistance = Math.Sqrt(dx * dx + dy * dy);
+            _initialPinchZoom = _zoom;
+            _isPanning = false;
+        }
     }
 
-    protected void OnCanvasMouseMove(MouseEventArgs e)
+    protected void OnCanvasPointerMove(PointerEventArgs e)
     {
+        if (!_activePointers.ContainsKey(e.PointerId))
+        {
+            return;
+        }
+
+        _activePointers[e.PointerId] = (e.ClientX, e.ClientY);
+
+        // Multi-touch pinch zoom
+        if (_activePointers.Count >= 2)
+        {
+            var pts = _activePointers.Values.Take(2).ToArray();
+            var dx = pts[0].X - pts[1].X;
+            var dy = pts[0].Y - pts[1].Y;
+            var currentDistance = Math.Sqrt(dx * dx + dy * dy);
+
+            if (_initialPinchDistance <= 0)
+            {
+                _initialPinchDistance = currentDistance;
+                _initialPinchZoom = _zoom;
+            }
+            else if (currentDistance > 0 && _initialPinchDistance > 0)
+            {
+                _zoom = Math.Clamp(_initialPinchZoom * (currentDistance / _initialPinchDistance), 0.2, 3.0);
+            }
+
+            _hasDragged = true;
+            return;
+        }
+
+        // Single pointer tracking
+        var moveDist = Math.Sqrt(Math.Pow(e.ClientX - _downClientX, 2) + Math.Pow(e.ClientY - _downClientY, 2));
+        if (moveDist > DragThreshold)
+        {
+            _hasDragged = true;
+        }
+
         if (_draggingNode is not null)
         {
             var newX = (e.ClientX - _panX) / _zoom - _nodeDragOffsetX;
@@ -225,7 +295,6 @@ public partial class FlowchartEditorPage : ComponentBase
                 {
                     _selectedNode = updated;
                 }
-                MarkDirty();
             }
         }
         else if (_isPanning)
@@ -235,10 +304,31 @@ public partial class FlowchartEditorPage : ComponentBase
         }
     }
 
-    protected void OnCanvasMouseUp(MouseEventArgs e)
+    protected void OnCanvasPointerUp(PointerEventArgs e)
     {
-        _isPanning = false;
-        _draggingNode = null;
+        _activePointers.Remove(e.PointerId);
+
+        if (_hasDragged && _draggingNode is not null)
+        {
+            MarkDirty();
+        }
+
+        if (_activePointers.Count < 2)
+        {
+            _initialPinchDistance = 0;
+        }
+
+        if (_activePointers.Count == 0)
+        {
+            _isPanning = false;
+            _draggingNode = null;
+            _initialPinchDistance = 0;
+        }
+    }
+
+    protected void OnCanvasPointerCancel(PointerEventArgs e)
+    {
+        OnCanvasPointerUp(e);
     }
 
     protected void OnCanvasWheel(WheelEventArgs e)
@@ -247,8 +337,13 @@ public partial class FlowchartEditorPage : ComponentBase
         _zoom = Math.Clamp(_zoom * factor, 0.2, 3.0);
     }
 
-    protected void OnNodeMouseDown(FlowchartNodeDto node, MouseEventArgs e)
+    protected void OnNodePointerDown(FlowchartNodeDto node, PointerEventArgs e)
     {
+        _activePointers[e.PointerId] = (e.ClientX, e.ClientY);
+        _hasDragged = false;
+        _downClientX = e.ClientX;
+        _downClientY = e.ClientY;
+
         if (!_isConnectingMode && e.Button == 0)
         {
             _draggingNode = node;
@@ -404,13 +499,11 @@ public partial class FlowchartEditorPage : ComponentBase
             return (string.Empty, 0, 0);
         }
 
-        // Centers
         var srcCenterX = src.X + src.Width / 2;
         var srcCenterY = src.Y + src.Height / 2;
         var tgtCenterX = tgt.X + tgt.Width / 2;
         var tgtCenterY = tgt.Y + tgt.Height / 2;
 
-        // Determine best exit point on source and entrance point on target
         var dx = tgtCenterX - srcCenterX;
         var dy = tgtCenterY - srcCenterY;
 
@@ -418,7 +511,6 @@ public partial class FlowchartEditorPage : ComponentBase
 
         if (Math.Abs(dx) >= Math.Abs(dy))
         {
-            // Horizontal connection
             if (dx >= 0)
             {
                 startX = src.X + src.Width;
@@ -436,7 +528,6 @@ public partial class FlowchartEditorPage : ComponentBase
         }
         else
         {
-            // Vertical connection
             if (dy >= 0)
             {
                 startX = srcCenterX;
@@ -453,11 +544,9 @@ public partial class FlowchartEditorPage : ComponentBase
             }
         }
 
-        // Midpoint and control point with curve offset
         var midX = (startX + endX) / 2;
         var midY = (startY + endY) / 2;
 
-        // Normal perpendicular vector for offset
         var length = Math.Sqrt((endX - startX) * (endX - startX) + (endY - startY) * (endY - startY));
         var normX = length > 0 ? -(endY - startY) / length : 0;
         var normY = length > 0 ? (endX - startX) / length : 0;
@@ -465,7 +554,6 @@ public partial class FlowchartEditorPage : ComponentBase
         var ctrlX = midX + normX * edge.CurveOffset;
         var ctrlY = midY + normY * edge.CurveOffset;
 
-        // Midpoint on quadratic curve at t = 0.5
         var labelX = 0.25 * startX + 0.5 * ctrlX + 0.25 * endX;
         var labelY = 0.25 * startY + 0.5 * ctrlY + 0.25 * endY;
 
