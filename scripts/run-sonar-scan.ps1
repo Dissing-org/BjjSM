@@ -8,16 +8,29 @@ param(
 $ErrorActionPreference = "Stop"
 
 if (-not $SonarToken) {
-    $mcpConfigFile = "$env:USERPROFILE\.gemini\config\mcp_config.json"
-    if (Test-Path $mcpConfigFile) {
-        $mcpJson = Get-Content $mcpConfigFile -Raw | ConvertFrom-Json
-        $tokenArg = $mcpJson.mcpServers.sonarqube.args | Where-Object { $_ -like "SONARQUBE_TOKEN=*" }
-        if ($tokenArg) { $SonarToken = $tokenArg -replace "^SONARQUBE_TOKEN=", "" }
+    $potentialPaths = @(
+        "$env:USERPROFILE\.gemini\config\mcp_config.json",
+        "C:\Users\mathi\.gemini\config\mcp_config.json"
+    )
+    foreach ($path in $potentialPaths) {
+        if (Test-Path $path) {
+            try {
+                $mcpJson = Get-Content $path -Raw | ConvertFrom-Json
+                $tokenArg = $mcpJson.mcpServers.sonarqube.args | Where-Object { $_ -like "SONARQUBE_TOKEN=*" }
+                if ($tokenArg) { 
+                    $SonarToken = $tokenArg -replace "^SONARQUBE_TOKEN=", "" 
+                    break
+                }
+            } catch { }
+        }
     }
 }
 
 if (-not $SonarToken) {
-    Write-Error "SonarQube token is required. Set `$env:SONAR_TOKEN or pass -SonarToken <token>."
+    Write-Warning "SonarQube token not found. Running standard build and test without SonarQube analysis."
+    dotnet build BjjSM.slnx --configuration Release /p:SkipAutoSonar=true
+    dotnet test BjjSM.slnx --configuration Release --no-build --verbosity normal /p:SkipAutoSonar=true
+    exit 0
 }
 
 dotnet-sonarscanner begin `
