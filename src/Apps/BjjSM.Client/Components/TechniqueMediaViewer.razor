@@ -1,10 +1,63 @@
 @namespace BjjSM.Client.Components
+@using BjjSM.Modules.Curriculum.Domain
 
-@if (!string.IsNullOrWhiteSpace(ImageUrl))
+@{
+    var effectiveVideoUrl = VideoUrl;
+    var parsedVideo = !string.IsNullOrWhiteSpace(effectiveVideoUrl) ? MediaUrlParser.Parse(effectiveVideoUrl) : null;
+    var effectiveImageUrl = !string.IsNullOrWhiteSpace(ImageUrl) 
+        ? ImageUrl 
+        : (parsedVideo?.Provider == MediaProvider.ImageOrGif ? parsedVideo.CleanUrl : null);
+}
+
+@if (parsedVideo != null && parsedVideo.Provider == MediaProvider.YouTube && !string.IsNullOrWhiteSpace(parsedVideo.EmbedUrl))
 {
-    <div class="technique-media-container">
+    <div class="technique-video-container mb-3">
+        <div class="ratio ratio-16x9 shadow-sm rounded overflow-hidden" style="border: 2px solid #20409A;">
+            <iframe src="@parsedVideo.EmbedUrl"
+                    title="@TechniqueTitle"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen>
+            </iframe>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-1 px-1">
+            <span class="badge" style="background-color: #EBF0FA; color: #20409A; font-weight: 700; border: 1px solid #20409A;">
+                ▶ YouTube Demonstration Loop
+            </span>
+            @if (parsedVideo.StartSeconds.HasValue || parsedVideo.EndSeconds.HasValue)
+            {
+                <span class="small text-muted font-monospace">
+                    ⏱ Range: @(parsedVideo.StartSeconds ?? 0)s - @(parsedVideo.EndSeconds.HasValue ? parsedVideo.EndSeconds.Value.ToString() + "s" : "end")
+                </span>
+            }
+        </div>
+    </div>
+}
+else if (parsedVideo != null && (parsedVideo.Provider == MediaProvider.DirectVideo || parsedVideo.Provider == MediaProvider.LocalServerVideo) && !string.IsNullOrWhiteSpace(parsedVideo.EmbedUrl))
+{
+    <div class="technique-video-container mb-3 text-center">
+        <video controls autoplay muted loop playsinline class="rounded shadow-sm w-100" style="max-height: 400px; border: 2px solid #20409A; background-color: #050505;">
+            <source src="@parsedVideo.EmbedUrl" type="video/mp4" />
+            Your browser does not support the video tag.
+        </video>
+        <div class="d-flex justify-content-between align-items-center mt-1 px-1">
+            <span class="badge" style="background-color: #FFEE00; color: #050505; font-weight: 700; border: 1px solid #050505;">
+                @(parsedVideo.Provider == MediaProvider.LocalServerVideo ? "🏛 Local Server Video" : "📹 Video Stream")
+            </span>
+            @if (parsedVideo.StartSeconds.HasValue || parsedVideo.EndSeconds.HasValue)
+            {
+                <span class="small text-muted font-monospace">
+                    ⏱ Range: @(parsedVideo.StartSeconds ?? 0)s - @(parsedVideo.EndSeconds.HasValue ? parsedVideo.EndSeconds.Value.ToString() + "s" : "end")
+                </span>
+            }
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(effectiveImageUrl))
+{
+    <div class="technique-media-container mt-2">
         <div class="technique-thumbnail-card" @onclick="OpenLightbox" title="Click to view technique animation full screen">
-            <img src="@ImageUrl" alt="@TechniqueTitle" class="technique-gif-img" loading="lazy" />
+            <img src="@effectiveImageUrl" alt="@TechniqueTitle" class="technique-gif-img" loading="lazy" />
             <div class="technique-zoom-overlay">
                 <span class="badge" style="background-color: #FFEE00; color: #050505; font-weight: 800; border: 1px solid #050505;">
                     🔍 EXPAND
@@ -14,17 +67,7 @@
     </div>
 }
 
-@if (!string.IsNullOrWhiteSpace(VideoUrl) && (VideoUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || VideoUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
-{
-    <div class="mt-2">
-        <a href="@VideoUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm fw-semibold"
-           style="background-color: #EBF0FA; color: #20409A; border: 1px solid #20409A;">
-            🎬 External Video Analysis (@VideoUrl)
-        </a>
-    </div>
-}
-
-@if (_isLightboxOpen)
+@if (_isLightboxOpen && !string.IsNullOrWhiteSpace(effectiveImageUrl))
 {
     <div class="technique-lightbox-backdrop" @onclick="CloseLightbox" tabindex="-1">
         <div class="technique-lightbox-dialog" @onclick:stopPropagation="true">
@@ -35,7 +78,7 @@
                 <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseLightbox"></button>
             </div>
             <div class="technique-lightbox-body text-center bg-black p-2">
-                <img src="@ImageUrl" alt="@TechniqueTitle" class="img-fluid technique-lightbox-img" />
+                <img src="@effectiveImageUrl" alt="@TechniqueTitle" class="img-fluid technique-lightbox-img" />
             </div>
             <div class="technique-lightbox-footer d-flex justify-content-between align-items-center p-2 bg-light">
                 <span class="small text-muted">Continuous loop &bull; Martial arts biomechanical demonstration</span>

@@ -1,4 +1,5 @@
 using BjjSM.Modules.Curriculum.Application;
+using BjjSM.Modules.Curriculum.Infrastructure;
 using BjjSM.Modules.Curriculum.Infrastructure.Pdf;
 using BjjSM.Modules.Curriculum.Infrastructure.Persistence;
 using BjjSM.Modules.Memberships.Application;
@@ -44,6 +45,19 @@ try
     builder.Services.AddScoped<IAnnualWheelService, AnnualWheelService>();
     builder.Services.AddScoped<ISpacedRepetitionRepository, SpacedRepetitionRepository>();
     builder.Services.AddScoped<ISpacedRepetitionSeedService, SpacedRepetitionSeedService>();
+    builder.Services.AddScoped<IFlowchartRepository, FlowchartRepository>();
+    builder.Services.AddScoped<IMediaStorageService>(sp =>
+        new FileSystemMediaStorageService(builder.Environment.ContentRootPath));
+
+    builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(opt =>
+    {
+        opt.MultipartBodyLengthLimit = 104857600;
+    });
+
+    builder.WebHost.ConfigureKestrel(opt =>
+    {
+        opt.Limits.MaxRequestBodySize = 104857600;
+    });
 
     builder.Services.AddCors(options =>
     {
@@ -65,6 +79,14 @@ try
     var app = builder.Build();
 
     app.UseSerilogRequestLogging();
+
+    var mediaDir = Path.Combine(builder.Environment.ContentRootPath, "data", "media");
+    if (!Directory.Exists(mediaDir)) Directory.CreateDirectory(mediaDir);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(mediaDir),
+        RequestPath = "/media"
+    });
 
     app.UseCors();
     app.UseFastEndpoints();
@@ -168,6 +190,13 @@ try
         var seeder = scope.ServiceProvider.GetRequiredService<BjjSM.Modules.Curriculum.Application.ISpacedRepetitionSeedService>();
         var defaultAcademyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         await seeder.EnsurePresetsAndBackfillAsync(defaultAcademyId);
+
+        if (!await curDb.Flowcharts.AnyAsync())
+        {
+            var preset = BjjSM.Modules.Curriculum.Domain.FlowchartPresets.CreateClosedGuardMatrix(defaultAcademyId);
+            curDb.Flowcharts.Add(preset);
+            await curDb.SaveChangesAsync();
+        }
     }
 
     await app.RunAsync();

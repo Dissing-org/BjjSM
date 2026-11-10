@@ -22,6 +22,10 @@ public class CurriculumDbContext : DbContext
     public DbSet<CardFieldValue> CardFieldValues => Set<CardFieldValue>();
     public DbSet<ReviewLog> ReviewLogs => Set<ReviewLog>();
 
+    public DbSet<Flowchart> Flowcharts => Set<Flowchart>();
+    public DbSet<FlowchartNode> FlowchartNodes => Set<FlowchartNode>();
+    public DbSet<FlowchartEdge> FlowchartEdges => Set<FlowchartEdge>();
+
     public CurriculumDbContext(DbContextOptions<CurriculumDbContext> options) : base(options)
     {
     }
@@ -84,6 +88,10 @@ public class CurriculumDbContext : DbContext
         modelBuilder.ApplyConfiguration(new FlashcardConfiguration());
         modelBuilder.ApplyConfiguration(new CardFieldValueConfiguration());
         modelBuilder.ApplyConfiguration(new ReviewLogConfiguration());
+
+        modelBuilder.ApplyConfiguration(new FlowchartConfiguration());
+        modelBuilder.ApplyConfiguration(new FlowchartNodeConfiguration());
+        modelBuilder.ApplyConfiguration(new FlowchartEdgeConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }
@@ -398,4 +406,74 @@ public class ReviewLogConfiguration : IEntityTypeConfiguration<ReviewLog>
         builder.HasIndex(r => new { r.DeckId, r.ReviewedAt });
     }
 }
+
+public class FlowchartConfiguration : IEntityTypeConfiguration<Flowchart>
+{
+    public void Configure(EntityTypeBuilder<Flowchart> builder)
+    {
+        builder.ToTable("Curriculum_Flowcharts");
+        builder.HasKey(f => f.Id);
+        builder.Property(f => f.Id).ValueGeneratedNever();
+
+        builder.Property(f => f.AcademyId).IsRequired();
+        builder.Property(f => f.Title).HasMaxLength(250).IsRequired();
+        builder.Property(f => f.Description).HasMaxLength(2000);
+        builder.Property(f => f.CreatedAt).IsRequired();
+        builder.Property(f => f.UpdatedAt).IsRequired();
+
+        builder.HasMany(f => f.Nodes)
+            .WithOne()
+            .HasForeignKey(n => n.FlowchartId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(f => f.Edges)
+            .WithOne()
+            .HasForeignKey(e => e.FlowchartId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(f => f.Nodes)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Navigation(f => f.Edges)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+}
+
+public class FlowchartNodeConfiguration : IEntityTypeConfiguration<FlowchartNode>
+{
+    public void Configure(EntityTypeBuilder<FlowchartNode> builder)
+    {
+        builder.ToTable("Curriculum_FlowchartNodes");
+        builder.HasKey(n => n.Id);
+        builder.Property(n => n.Id).ValueGeneratedNever();
+
+        builder.Property(n => n.FlowchartId).IsRequired();
+        builder.Property(n => n.Title).HasMaxLength(250).IsRequired();
+        builder.Property(n => n.Category).IsRequired();
+        builder.Property(n => n.Notes).HasMaxLength(2000);
+        builder.Property(n => n.X).IsRequired();
+        builder.Property(n => n.Y).IsRequired();
+        builder.Property(n => n.Width).IsRequired();
+        builder.Property(n => n.Height).IsRequired();
+    }
+}
+
+public class FlowchartEdgeConfiguration : IEntityTypeConfiguration<FlowchartEdge>
+{
+    public void Configure(EntityTypeBuilder<FlowchartEdge> builder)
+    {
+        builder.ToTable("Curriculum_FlowchartEdges");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id).ValueGeneratedNever();
+
+        builder.Property(e => e.FlowchartId).IsRequired();
+        builder.Property(e => e.SourceNodeId).IsRequired();
+        builder.Property(e => e.TargetNodeId).IsRequired();
+        builder.Property(e => e.Label).HasMaxLength(250).IsRequired();
+        builder.Property(e => e.Type).IsRequired();
+        builder.Property(e => e.Notes).HasMaxLength(2000);
+        builder.Property(e => e.CurveOffset).IsRequired();
+    }
+}
+
 

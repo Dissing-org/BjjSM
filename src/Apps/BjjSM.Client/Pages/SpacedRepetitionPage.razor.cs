@@ -1,6 +1,8 @@
 using BjjSM.Client.Models;
 using BjjSM.Client.Services;
+using BjjSM.Modules.Curriculum.Domain;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace BjjSM.Client.Pages;
 
@@ -10,9 +12,18 @@ public partial class SpacedRepetitionPage : ComponentBase
     private ISpacedRepetitionApiClient Api { get; set; } = default!;
 
     [Inject]
+    private ICurriculumMediaApiClient MediaApi { get; set; } = default!;
+
+    [Inject]
     private Microsoft.JSInterop.IJSRuntime JsRuntime { get; set; } = default!;
 
     private readonly Guid _academyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+    private IReadOnlyList<MediaFileDto> _serverMediaFiles = [];
+    private bool _isUploadingMedia;
+    private string? _mediaUploadMessage;
+    private readonly Dictionary<Guid, string> _activeMediaSubTabs = new();
+    private readonly Dictionary<Guid, (int? Start, int? End)> _fieldTimestampInputs = new();
 
     private SpacedRepetitionOverviewDto? _overview;
     private bool _isLoading = true;
@@ -107,6 +118,14 @@ public partial class SpacedRepetitionPage : ComponentBase
     protected override async Task OnInitializedAsync()
     {
         await LoadOverviewAsync();
+        try
+        {
+            _serverMediaFiles = await MediaApi.GetMediaFilesAsync();
+        }
+        catch
+        {
+            _serverMediaFiles = [];
+        }
     }
 
     private async Task LoadOverviewAsync()
@@ -368,6 +387,71 @@ public partial class SpacedRepetitionPage : ComponentBase
                 SortOrder = f.SortOrder
             });
         }
+
+        foreach (var f in _editingCardFields.Where(x => x.FieldType == 3 || x.FieldType == 4 || x.FieldType == 5))
+        {
+            var parsed = MediaUrlParser.Parse(f.Value);
+            _fieldTimestampInputs[f.FieldDefinitionId] = (parsed.StartSeconds, parsed.EndSeconds);
+            _activeMediaSubTabs[f.FieldDefinitionId] = f.Value.StartsWith("/media/") ? "server" : "url";
+        }
+    }
+
+    private string GetMediaSubTab(Guid fieldDefId) =>
+        _activeMediaSubTabs.TryGetValue(fieldDefId, out var tab) ? tab : "url";
+
+    private void SetMediaSubTab(Guid fieldDefId, string tab) =>
+        _activeMediaSubTabs[fieldDefId] = tab;
+
+    private int? GetFieldStartSeconds(Guid fieldDefId) =>
+        _fieldTimestampInputs.TryGetValue(fieldDefId, out var t) ? t.Start : null;
+
+    private int? GetFieldEndSeconds(Guid fieldDefId) =>
+        _fieldTimestampInputs.TryGetValue(fieldDefId, out var t) ? t.End : null;
+
+    private void UpdateFieldTimestamps(EditableCardFieldValue field, int? start, int? end)
+    {
+        _fieldTimestampInputs[field.FieldDefinitionId] = (start, end);
+        var basePart = field.Value.Split('#')[0];
+        if (string.IsNullOrWhiteSpace(basePart)) return;
+        field.Value = MediaUrlParser.BuildUrlWithTimestamps(basePart, start, end);
+    }
+
+    private async Task HandleFileUploadAsync(EditableCardFieldValue field, InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null) return;
+
+        _isUploadingMedia = true;
+        _mediaUploadMessage = $"Uploading {file.Name}...";
+        try
+        {
+            var uploaded = await MediaApi.UploadMediaAsync(file);
+            if (uploaded is not null)
+            {
+                var times = _fieldTimestampInputs.TryGetValue(field.FieldDefinitionId, out var t) ? t : (null, null);
+                field.Value = MediaUrlParser.BuildUrlWithTimestamps(uploaded.RelativeUrl, times.Start, times.End);
+                _serverMediaFiles = await MediaApi.GetMediaFilesAsync();
+                _mediaUploadMessage = $"Uploaded {file.Name} successfully.";
+            }
+            else
+            {
+                _mediaUploadMessage = "Upload failed. Check file size (max 100MB) and format (.mp4, .webm, .gif).";
+            }
+        }
+        catch (Exception ex)
+        {
+            _mediaUploadMessage = $"Upload error: {ex.Message}";
+        }
+        finally
+        {
+            _isUploadingMedia = false;
+        }
+    }
+
+    private void SelectServerMedia(EditableCardFieldValue field, string relativeUrl)
+    {
+        var times = _fieldTimestampInputs.TryGetValue(field.FieldDefinitionId, out var t) ? t : (null, null);
+        field.Value = MediaUrlParser.BuildUrlWithTimestamps(relativeUrl, times.Start, times.End);
     }
 
     private async Task SaveCardAsync()

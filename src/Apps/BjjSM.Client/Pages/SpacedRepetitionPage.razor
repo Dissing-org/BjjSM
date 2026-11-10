@@ -332,7 +332,7 @@ else if (_overview is not null)
                                                 ImageUrl="@field.Value" 
                                                 TechniqueTitle="@GetCardTitle(CurrentSessionCard)" />
                                         }
-                                        else if (field.FieldType == 3 && (field.Value.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || field.Value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)))
+                                        else if (field.FieldType == 3)
                                         {
                                             <TechniqueMediaViewer 
                                                 VideoUrl="@field.Value" 
@@ -524,20 +524,153 @@ else if (_overview is not null)
                             {
                                 <textarea class="form-control form-control-sm" rows="3" @bind="field.Value"></textarea>
                             }
-                            else if (field.FieldType == 4)
+                            else if (field.FieldType == 3 || field.FieldType == 4)
                             {
-                                <input type="text" class="form-control form-control-sm" placeholder="images/techniques/... or https://..." @bind="field.Value" @bind:event="oninput" />
-                                @if (!string.IsNullOrWhiteSpace(field.Value))
-                                {
-                                    <div class="mt-2 p-2 border rounded text-center" style="background-color: #050505;">
-                                        <div class="small fw-semibold mb-1" style="color: #FFEE00;">Illustration / GIF Live Preview:</div>
-                                        <img src="@field.Value" alt="Preview" style="max-height: 140px; max-width: 100%; object-fit: contain; border-radius: 4px;" />
+                                var currentSubTab = GetMediaSubTab(field.FieldDefinitionId);
+                                var startSec = GetFieldStartSeconds(field.FieldDefinitionId);
+                                var endSec = GetFieldEndSeconds(field.FieldDefinitionId);
+                                var parsed = MediaUrlParser.Parse(field.Value);
+
+                                <div class="card p-2 border" style="background-color: #F8FAFC;">
+                                    <ul class="nav nav-pills nav-fill mb-2 p-1 bg-white border rounded small">
+                                        <li class="nav-item">
+                                            <button type="button" 
+                                                    class="nav-link py-1 px-2 fw-semibold @(currentSubTab == "url" ? "active" : "")"
+                                                    style="@(currentSubTab == "url" ? "background-color: #20409A; color: #FFFFFF;" : "color: #20409A;")"
+                                                    @onclick='() => SetMediaSubTab(field.FieldDefinitionId, "url")'>
+                                                🌐 Web Link
+                                            </button>
+                                        </li>
+                                        <li class="nav-item">
+                                            <button type="button" 
+                                                    class="nav-link py-1 px-2 fw-semibold @(currentSubTab == "upload" ? "active" : "")"
+                                                    style="@(currentSubTab == "upload" ? "background-color: #20409A; color: #FFFFFF;" : "color: #20409A;")"
+                                                    @onclick='() => SetMediaSubTab(field.FieldDefinitionId, "upload")'>
+                                                ⬆️ Direct Upload
+                                            </button>
+                                        </li>
+                                        <li class="nav-item">
+                                            <button type="button" 
+                                                    class="nav-link py-1 px-2 fw-semibold @(currentSubTab == "server" ? "active" : "")"
+                                                    style="@(currentSubTab == "server" ? "background-color: #20409A; color: #FFFFFF;" : "color: #20409A;")"
+                                                    @onclick='() => SetMediaSubTab(field.FieldDefinitionId, "server")'>
+                                                📁 Server Library
+                                            </button>
+                                        </li>
+                                    </ul>
+
+                                    @if (currentSubTab == "url")
+                                    {
+                                        <div class="mb-2">
+                                            <label class="small text-muted fw-semibold d-block mb-1">Video / Media URL (YouTube, MP4, WebM, GIF, Image)</label>
+                                            <input type="text" class="form-control form-control-sm" 
+                                                   placeholder="https://www.youtube.com/watch?v=... or https://.../video.mp4" 
+                                                   value="@parsed.CleanUrl"
+                                                   @onchange="@(e => {
+                                                       var val = e.Value?.ToString() ?? "";
+                                                       UpdateFieldTimestamps(field, startSec, endSec);
+                                                       field.Value = MediaUrlParser.BuildUrlWithTimestamps(val, startSec, endSec);
+                                                   })" />
+                                        </div>
+                                    }
+                                    else if (currentSubTab == "upload")
+                                    {
+                                        <div class="mb-2">
+                                            <label class="small text-muted fw-semibold d-block mb-1">Upload to Academy Server (Max 100MB &bull; MP4, WebM, GIF, PNG, JPG)</label>
+                                            <InputFile OnChange="@(e => HandleFileUploadAsync(field, e))" 
+                                                       accept=".mp4,.webm,.gif,.png,.jpg,.jpeg" 
+                                                       class="form-control form-control-sm" 
+                                                       disabled="@_isUploadingMedia" />
+                                            @if (_isUploadingMedia)
+                                            {
+                                                <div class="text-primary small mt-1 fw-bold">
+                                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                                    @_mediaUploadMessage
+                                                </div>
+                                            }
+                                            else if (!string.IsNullOrWhiteSpace(_mediaUploadMessage))
+                                            {
+                                                <div class="text-success small mt-1 fw-semibold">
+                                                    @_mediaUploadMessage
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else if (currentSubTab == "server")
+                                    {
+                                        <div class="mb-2">
+                                            <label class="small text-muted fw-semibold d-block mb-1">Select from Academy Server Media</label>
+                                            <select class="form-select form-select-sm" 
+                                                    @onchange="@(e => SelectServerMedia(field, e.Value?.ToString() ?? ""))">
+                                                <option value="">-- Choose hosted media file --</option>
+                                                @foreach (var mf in _serverMediaFiles)
+                                                {
+                                                    var isSel = !string.IsNullOrWhiteSpace(field.Value) && field.Value.Contains(mf.RelativeUrl);
+                                                    <option value="@mf.RelativeUrl" selected="@isSel">
+                                                        @mf.FileName (@(mf.SizeBytes >= 1048576 ? $"{mf.SizeBytes / 1048576.0:F1} MB" : $"{mf.SizeBytes / 1024} KB"))
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+                                    }
+
+                                    <!-- Optional Timestamp Looping -->
+                                    <div class="p-2 border rounded bg-white mt-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small fw-bold text-dark">⏱ Loop Timestamp Window</span>
+                                            <span class="small text-muted">(Optional - in seconds)</span>
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-light text-muted">Start</span>
+                                                    <input type="number" min="0" class="form-control" placeholder="0" 
+                                                           value="@startSec" 
+                                                           @onchange="@(e => {
+                                                               int? s = int.TryParse(e.Value?.ToString(), out var parsedS) ? parsedS : null;
+                                                               UpdateFieldTimestamps(field, s, endSec);
+                                                           })" />
+                                                    <span class="input-group-text bg-light text-muted">s</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-light text-muted">End</span>
+                                                    <input type="number" min="0" class="form-control" placeholder="e.g. 15" 
+                                                           value="@endSec" 
+                                                           @onchange="@(e => {
+                                                               int? endVal = int.TryParse(e.Value?.ToString(), out var parsedE) ? parsedE : null;
+                                                               UpdateFieldTimestamps(field, startSec, endVal);
+                                                           })" />
+                                                    <span class="input-group-text bg-light text-muted">s</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                }
+
+                                    @if (!string.IsNullOrWhiteSpace(field.Value))
+                                    {
+                                        <div class="mt-2 pt-2 border-top">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="small fw-bold text-muted">Assigned Media Reference:</span>
+                                                <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none small"
+                                                        @onclick="@(() => { field.Value = ""; UpdateFieldTimestamps(field, null, null); })">
+                                                    Clear
+                                                </button>
+                                            </div>
+                                            <div class="small font-monospace text-truncate text-secondary mb-2 bg-light p-1 rounded border">
+                                                @field.Value
+                                            </div>
+                                            <div class="technique-live-preview">
+                                                <TechniqueMediaViewer VideoUrl="@field.Value" TechniqueTitle="@field.FieldName" />
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
                             }
                             else
                             {
-                                <input type="text" class="form-control form-control-sm" placeholder="@(field.FieldType == 3 ? "https://..." : "")" @bind="field.Value" />
+                                <input type="text" class="form-control form-control-sm" placeholder="" @bind="field.Value" />
                             }
                         </div>
                     }

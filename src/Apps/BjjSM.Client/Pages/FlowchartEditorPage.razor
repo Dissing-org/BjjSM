@@ -1,0 +1,311 @@
+@page "/flowcharts/{Id:guid}"
+@using System.Globalization
+
+<PageTitle>BjjSM - @(_flowchart?.Title ?? "Flowchart Editor")</PageTitle>
+
+@if (_isLoading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status" style="color: var(--brand-blue, #20409A) !important;">
+            <span class="visually-hidden">Loading flowchart...</span>
+        </div>
+        <p class="text-muted mt-2">Loading game plan canvas...</p>
+    </div>
+}
+else if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="card border-0 shadow-sm p-4 m-4" style="border-left: 5px solid #DC2626 !important; background-color: #FEF2F2;">
+        <h4 class="text-danger fw-bold">⚠️ Error Loading Flowchart</h4>
+        <p class="text-muted">@_errorMessage</p>
+        <div>
+            <a href="flowcharts" class="btn btn-outline-secondary">← Back to Flowcharts</a>
+            <button class="btn btn-outline-danger ms-2" @onclick="LoadFlowchartAsync">Retry</button>
+        </div>
+    </div>
+}
+else if (_flowchart is not null)
+{
+    <div class="flowchart-editor-container d-flex flex-column h-100" style="min-height: calc(100vh - 80px);">
+        <!-- Top Toolbar -->
+        <div class="editor-toolbar bg-white border-bottom p-2 d-flex justify-content-between align-items-center flex-wrap gap-2 shadow-sm">
+            <div class="d-flex align-items-center gap-3">
+                <a href="flowcharts" class="btn btn-sm btn-outline-secondary" title="Return to list">
+                    ← Back
+                </a>
+                <div>
+                    <input type="text" class="form-control form-control-sm fw-bold border-0 bg-transparent fs-5 p-0"
+                           style="max-width: 350px; color: #050505;"
+                           @bind="_title" @bind:after="MarkDirty" placeholder="Game Plan Title..." />
+                </div>
+                @if (_isDirty)
+                {
+                    <span class="badge bg-warning text-dark fw-bold">Unsaved Changes</span>
+                }
+            </div>
+
+            <!-- Canvas Action Controls -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button class="btn btn-sm btn-brand-primary d-flex align-items-center gap-1" @onclick="AddPositionNode">
+                    <span>+</span> Add Position
+                </button>
+
+                <button class="btn btn-sm @(_isConnectingMode ? "btn-warning fw-bold" : "btn-outline-primary")"
+                        @onclick="ToggleConnectMode" title="Click source node then target node to draw an arrow">
+                    @(_isConnectingMode ? (_selectedSourceNodeId.HasValue ? "⚡ Click Target Node..." : "⚡ Select Source Node...") : "🔗 Connect Arrows")
+                </button>
+
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" @onclick="ZoomIn" title="Zoom In">+</button>
+                    <button class="btn btn-outline-secondary" @onclick="ResetView" title="Reset View">
+                        @(Math.Round(_zoom * 100))%
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="ZoomOut" title="Zoom Out">-</button>
+                </div>
+
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" @onclick="ExportJsonAsync" title="Export as JSON">
+                        Export JSON
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="ExportSvgAsync" title="Download SVG image">
+                        Download SVG
+                    </button>
+                    <label class="btn btn-outline-secondary mb-0" title="Import JSON file" style="cursor: pointer;">
+                        Import JSON
+                        <InputFile OnChange="ImportJsonAsync" class="d-none" accept=".json" />
+                    </label>
+                </div>
+
+                <button class="btn btn-sm btn-success px-3 fw-bold" @onclick="SaveFlowchartAsync" disabled="@_isSaving">
+                    @if (_isSaving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span>💾 Save</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_notificationMessage))
+        {
+            <div class="alert alert-info alert-dismissible m-2 mb-0 py-2" role="alert">
+                <span>@_notificationMessage</span>
+                <button type="button" class="btn-close" aria-label="Close" @onclick="() => _notificationMessage = null"></button>
+            </div>
+        }
+
+        <!-- Interactive Canvas Area -->
+        <div class="canvas-wrapper flex-grow-1 position-relative overflow-hidden"
+             style="background-color: #F8FAFC; background-image: radial-gradient(#CBD5E1 1px, transparent 1px); background-size: 24px 24px; min-height: 650px;"
+             @onmousedown="OnCanvasMouseDown"
+             @onmousemove="OnCanvasMouseMove"
+             @onmouseup="OnCanvasMouseUp"
+             @onwheel="OnCanvasWheel">
+
+            <svg id="bjj-flowchart-svg" class="w-100 h-100 position-absolute" style="top: 0; left: 0; cursor: @(_isConnectingMode ? "crosshair" : (_isPanning ? "grabbing" : "grab")); user-select: none;">
+                <defs>
+                    <!-- Arrow markers -->
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#20409A" />
+                    </marker>
+                    <marker id="arrowhead-gold" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#B38F00" />
+                    </marker>
+                    <marker id="arrowhead-selected" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#EF4444" />
+                    </marker>
+                </defs>
+
+                <!-- Canvas transformation group -->
+                <g transform="translate(@(_panX.ToString(CultureInfo.InvariantCulture)), @(_panY.ToString(CultureInfo.InvariantCulture))) scale(@(_zoom.ToString(CultureInfo.InvariantCulture)))">
+
+                    <!-- Render Edges (Arrows) -->
+                    @foreach (var edge in _edges)
+                    {
+                        var (pathData, labelX, labelY) = CalculateEdgeGeometry(edge);
+                        var isSelected = _selectedEdge?.Id == edge.Id;
+                        var isSubmission = edge.Type == 3;
+                        var strokeColor = isSelected ? "#EF4444" : (isSubmission ? "#B38F00" : "#20409A");
+                        var markerId = isSelected ? "url(#arrowhead-selected)" : (isSubmission ? "url(#arrowhead-gold)" : "url(#arrowhead)");
+
+                        <g class="flowchart-edge" style="cursor: pointer;" @onclick="() => SelectEdge(edge)" @onclick:stopPropagation="true">
+                            <!-- Background thick line for easy clicking -->
+                            <path d="@pathData" fill="none" stroke="transparent" stroke-width="16" />
+
+                            <!-- Actual edge stroke -->
+                            <path d="@pathData"
+                                  fill="none"
+                                  stroke="@strokeColor"
+                                  stroke-width="@(isSelected ? "3.5" : "2.5")"
+                                  stroke-dasharray="@(edge.Type == 4 ? "4 4" : "none")"
+                                  marker-end="@markerId" />
+
+                            <!-- Edge Action Label Pill -->
+                            <g transform="translate(@(labelX.ToString(CultureInfo.InvariantCulture)), @(labelY.ToString(CultureInfo.InvariantCulture)))">
+                                @{
+                                    var textLen = Math.Max(edge.Label.Length * 7.5, 50);
+                                    var pillWidth = textLen + 16;
+                                }
+                                <rect x="@((-pillWidth / 2).ToString(CultureInfo.InvariantCulture))" y="-12"
+                                      width="@(pillWidth.ToString(CultureInfo.InvariantCulture))" height="24" rx="12"
+                                      fill="@(isSelected ? "#FEE2E2" : (isSubmission ? "#FFFBEB" : "#FFFFFF"))"
+                                      stroke="@strokeColor"
+                                      stroke-width="1.5" />
+                                <text x="0" y="4" text-anchor="middle" font-size="11" font-weight="700"
+                                      fill="@(isSelected ? "#DC2626" : (isSubmission ? "#997A00" : "#050505"))">
+                                    @edge.Label
+                                </text>
+                            </g>
+                        </g>
+                    }
+
+                    <!-- Render Nodes (Positions) -->
+                    @foreach (var node in _nodes)
+                    {
+                        var isSelected = _selectedNode?.Id == node.Id;
+                        var isConnectingSource = _selectedSourceNodeId == node.Id;
+                        var isSubmissionNode = node.Category == 4;
+                        var headerColor = isSubmissionNode ? "#FFEE00" : "#20409A";
+                        var headerTextColor = isSubmissionNode ? "#050505" : "#FFFFFF";
+                        var borderColor = isSelected ? "#EF4444" : (isConnectingSource ? "#F59E0B" : (isSubmissionNode ? "#FFD700" : "#20409A"));
+
+                        <g class="flowchart-node"
+                           transform="translate(@(node.X.ToString(CultureInfo.InvariantCulture)), @(node.Y.ToString(CultureInfo.InvariantCulture)))"
+                           style="cursor: @(_isConnectingMode ? "crosshair" : "move");"
+                           @onmousedown="(e) => OnNodeMouseDown(node, e)"
+                           @onmousedown:stopPropagation="true"
+                           @onclick="() => HandleNodeClick(node)"
+                           @onclick:stopPropagation="true">
+
+                            <!-- Node Container Card -->
+                            <rect width="@(node.Width.ToString(CultureInfo.InvariantCulture))"
+                                  height="@(node.Height.ToString(CultureInfo.InvariantCulture))"
+                                  rx="8"
+                                  fill="#FFFFFF"
+                                  stroke="@borderColor"
+                                  stroke-width="@(isSelected || isConnectingSource ? "3" : "2")"
+                                  filter="drop-shadow(0 4px 6px rgba(0, 0, 0, 0.08))" />
+
+                            <!-- Header Bar -->
+                            <path d="M 0 8 Q 0 0 8 0 L @((node.Width - 8).ToString(CultureInfo.InvariantCulture)) 0 Q @(node.Width.ToString(CultureInfo.InvariantCulture)) 0 @(node.Width.ToString(CultureInfo.InvariantCulture)) 8 L @(node.Width.ToString(CultureInfo.InvariantCulture)) 26 L 0 26 Z"
+                                  fill="@headerColor" />
+
+                            <!-- Category Badge text -->
+                            <text x="8" y="18" font-size="10" font-weight="700" fill="@headerTextColor" letter-spacing="0.5">
+                                @GetCategoryDisplayName(node.Category).ToUpperInvariant()
+                            </text>
+
+                            <!-- Node Title -->
+                            <text x="10" y="48" font-size="13" font-weight="700" fill="#050505">
+                                @TruncateText(node.Title, (int)(node.Width / 8))
+                            </text>
+
+                            <!-- Node Notes snippet -->
+                            @if (!string.IsNullOrWhiteSpace(node.Notes))
+                            {
+                                <g>
+                                    <text x="10" y="66" font-size="10" fill="#64748B">
+                                        @TruncateText(node.Notes, (int)(node.Width / 7))
+                                    </text>
+                                </g>
+                            }
+
+                            <!-- Connecting Port Indicator -->
+                            @if (_isConnectingMode)
+                            {
+                                <circle cx="@((node.Width / 2).ToString(CultureInfo.InvariantCulture))" cy="@(node.Height.ToString(CultureInfo.InvariantCulture))"
+                                        r="6" fill="#F59E0B" stroke="#FFFFFF" stroke-width="2" />
+                            }
+                        </g>
+                    }
+                </g>
+            </svg>
+
+            <!-- Mode Banner / Hint Overlay -->
+            @if (_isConnectingMode)
+            {
+                <div class="position-absolute top-0 start-50 translate-middle-x mt-3 bg-dark text-white px-3 py-1 rounded-pill shadow-sm small fw-bold d-flex align-items-center gap-2">
+                    <span>⚡ @(_selectedSourceNodeId.HasValue ? "Now click target node to create transition" : "Click starting position node")</span>
+                    <button class="btn btn-sm btn-link text-warning p-0 text-decoration-none" @onclick="ToggleConnectMode">Cancel</button>
+                </div>
+            }
+        </div>
+
+        <!-- Selected Element Inspector Panel / Bottom Drawer -->
+        @if (_selectedNode is not null)
+        {
+            <div class="border-top bg-white p-3 shadow-lg position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold m-0 text-primary">📌 Edit Position: @_selectedNode.Title</h6>
+                    <button class="btn-close btn-sm" aria-label="Close" @onclick="() => _selectedNode = null"></button>
+                </div>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">POSITION TITLE</label>
+                        <input type="text" class="form-control form-control-sm" @bind="_selectedNode.Title" @bind:after="MarkDirty" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted mb-1">CATEGORY</label>
+                        <select class="form-select form-select-sm" @bind="_selectedNode.Category" @bind:after="MarkDirty">
+                            <option value="1">Top Control</option>
+                            <option value="2">Bottom Guard</option>
+                            <option value="3">Neutral</option>
+                            <option value="4">Submission Finish</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold text-muted mb-1">COACHING NOTES / KEYS</label>
+                        <input type="text" class="form-control form-control-sm" placeholder="e.g. Underhook priority, hip pin" @bind="_selectedNode.Notes" @bind:after="MarkDirty" />
+                    </div>
+                    <div class="col-md-2 d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-danger w-100" @onclick="() => DeleteNode(_selectedNode.Id)">
+                            Delete Node
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (_selectedEdge is not null)
+        {
+            <div class="border-top bg-white p-3 shadow-lg position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold m-0 text-primary">🔗 Edit Transition: @_selectedEdge.Label</h6>
+                    <button class="btn-close btn-sm" aria-label="Close" @onclick="() => _selectedEdge = null"></button>
+                </div>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">TRANSITION / TECHNIQUE LABEL</label>
+                        <input type="text" class="form-control form-control-sm" @bind="_selectedEdge.Label" @bind:after="MarkDirty" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted mb-1">TRANSITION TYPE</label>
+                        <select class="form-select form-select-sm" @bind="_selectedEdge.Type" @bind:after="MarkDirty">
+                            <option value="1">Sweep</option>
+                            <option value="2">Pass</option>
+                            <option value="3">Submission Attack</option>
+                            <option value="4">Escape</option>
+                            <option value="5">Reversal</option>
+                            <option value="6">Transition</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">COACHING NOTES</label>
+                        <input type="text" class="form-control form-control-sm" placeholder="e.g. Explosive bridge, posture break" @bind="_selectedEdge.Notes" @bind:after="MarkDirty" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted mb-1">CURVE OFFSET: @(_selectedEdge.CurveOffset)px</label>
+                        <input type="range" class="form-range" min="-120" max="120" step="5" @bind="_selectedEdge.CurveOffset" @bind:after="MarkDirty" />
+                    </div>
+                    <div class="col-md-2 d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-danger w-100" @onclick="() => DeleteEdge(_selectedEdge.Id)">
+                            Delete Arrow
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
