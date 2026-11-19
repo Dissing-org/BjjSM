@@ -1,9 +1,11 @@
 using System.Text.RegularExpressions;
+using BjjSM.SharedKernel;
 
 namespace BjjSM.Modules.Curriculum.Domain;
 
 public enum MediaProvider
 {
+    None = 0,
     YouTube = 1,
     DirectVideo = 2,
     LocalServerVideo = 3,
@@ -69,12 +71,17 @@ public static class MediaUrlParser
             return new ParsedMediaInfo(trimmed, cleanUrl, MediaProvider.YouTube, startSec, endSec, embedUrl);
         }
 
+        // Reject unsafe schemes, protocol-relative URLs, or path traversal
+        if (!SafeUrlValidator.IsSafeMediaUrl(cleanUrl))
+        {
+            return new ParsedMediaInfo(trimmed, string.Empty, MediaProvider.None, null, null, string.Empty);
+        }
+
         // 2. Local Server Video
         var cleanPathOnly = cleanUrl.Split('?', '#')[0];
         var extension = Path.GetExtension(cleanPathOnly);
 
-        var isLocal = cleanUrl.StartsWith("/media/", StringComparison.OrdinalIgnoreCase)
-                      || cleanUrl.StartsWith("media/", StringComparison.OrdinalIgnoreCase);
+        var isLocal = cleanUrl.StartsWith("/media/", StringComparison.OrdinalIgnoreCase);
 
         if (isLocal && VideoExtensions.Contains(extension))
         {

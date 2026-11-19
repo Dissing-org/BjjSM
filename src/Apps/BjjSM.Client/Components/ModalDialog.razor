@@ -1,0 +1,172 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@if (IsOpen)
+{
+    <dialog @ref="_dialogRef"
+            class="bjj-dialog @DialogClass"
+            aria-labelledby="@_titleId"
+            closedby="@(LightDismiss ? "any" : "closerequest")"
+            @onclose="HandleNativeCloseAsync">
+        @if (ShowHeader)
+        {
+            <div class="bjj-dialog-header @HeaderClass">
+                @if (HeaderContent is not null)
+                {
+                    <div id="@_titleId" class="bjj-dialog-title-custom flex-grow-1">
+                        @HeaderContent
+                    </div>
+                }
+                else
+                {
+                    <h2 id="@_titleId" class="bjj-dialog-title">@Title</h2>
+                }
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        aria-label="@CloseButtonLabel"
+                        @onclick="RequestCloseAsync"></button>
+            </div>
+        }
+        else
+        {
+            <h2 id="@_titleId" class="visually-hidden">@(!string.IsNullOrWhiteSpace(AriaLabel) ? AriaLabel : Title)</h2>
+        }
+
+        @if (ChildContent is not null)
+        {
+            <div class="bjj-dialog-body @BodyClass">
+                @ChildContent
+            </div>
+        }
+
+        @if (FooterContent is not null)
+        {
+            <div class="bjj-dialog-footer @FooterClass">
+                @FooterContent
+            </div>
+        }
+    </dialog>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public string? DialogClass { get; set; }
+    [Parameter] public bool LightDismiss { get; set; }
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public string? HeaderClass { get; set; }
+    [Parameter] public string? BodyClass { get; set; }
+    [Parameter] public string? FooterClass { get; set; }
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+    [Parameter] public string CloseButtonLabel { get; set; } = "Luk";
+
+    private readonly string _titleId = $"dialog-title-{Guid.NewGuid():N}";
+    private ElementReference _dialogRef;
+    private IJSObjectReference? _interopModule;
+    private bool _wasOpen;
+    private bool _closingFromCode;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            _wasOpen = true;
+            try
+            {
+                _interopModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/app-interop.js");
+                await _interopModule.InvokeVoidAsync("showModalDialog", _dialogRef, LightDismiss);
+            }
+            catch (JSException)
+            {
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+        else if (!IsOpen && _wasOpen)
+        {
+            _wasOpen = false;
+            await CloseNativeDialogSilentlyAsync();
+        }
+    }
+
+    public async Task RequestCloseAsync()
+    {
+        _closingFromCode = true;
+        try
+        {
+            _wasOpen = false;
+            await CloseNativeDialogSilentlyAsync();
+            await OnClose.InvokeAsync();
+        }
+        finally
+        {
+            _closingFromCode = false;
+        }
+    }
+
+    private async Task HandleNativeCloseAsync()
+    {
+        if (_closingFromCode)
+        {
+            return;
+        }
+
+        _wasOpen = false;
+        if (IsOpen)
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+
+    private async Task CloseNativeDialogSilentlyAsync()
+    {
+        if (_interopModule is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _interopModule.InvokeVoidAsync("closeDialog", _dialogRef);
+        }
+        catch (JSException)
+        {
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interopModule is not null)
+        {
+            try
+            {
+                await _interopModule.DisposeAsync();
+            }
+            catch (JSException)
+            {
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            _interopModule = null;
+        }
+    }
+}

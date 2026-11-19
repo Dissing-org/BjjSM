@@ -224,7 +224,7 @@ public class SpacedRepetitionTests
             Assert.NotNull(imageField);
             Assert.False(string.IsNullOrWhiteSpace(imageField.Value));
             Assert.StartsWith("images/techniques/", imageField.Value);
-            Assert.EndsWith(".gif", imageField.Value);
+            Assert.EndsWith(".mp4", imageField.Value);
         }
     }
 

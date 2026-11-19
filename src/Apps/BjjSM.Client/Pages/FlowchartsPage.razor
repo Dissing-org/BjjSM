@@ -1,25 +1,25 @@
 @page "/flowcharts"
 
-<PageTitle>BjjSM - Grappling Flowcharts</PageTitle>
+<PageTitle>Flowcharts | BjjSM</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h1 class="h2 fw-bold text-dark m-0">🗺️ Grappling Flowcharts</h1>
-        <p class="text-muted m-0">Interactive game plan matrices, tactical positions & technique transitions</p>
+        <h1 class="h2 fw-bold text-dark m-0"><span aria-hidden="true">🗺️</span> Grappling-flowcharts</h1>
+        <p class="text-muted m-0">Interaktive kampplaner, taktiske positioner og teknikovergange</p>
     </div>
     <div>
-        <button class="btn btn-brand-primary d-flex align-items-center gap-2" @onclick="OpenCreateModal">
-            <span>+</span> New Flowchart
+        <button type="button" class="btn btn-brand-primary d-flex align-items-center gap-2" @onclick="OpenCreateModal">
+            <span aria-hidden="true">+</span> Nyt flowchart
         </button>
     </div>
 </div>
 
 @if (!string.IsNullOrEmpty(_errorMessage))
 {
-    <div class="card border-0 shadow-sm p-3 mb-4" style="border-left: 5px solid #DC2626 !important; background-color: #FEF2F2;">
+    <div class="card border-0 shadow-sm p-3 mb-4" role="alert" style="border-left: 5px solid #DC2626 !important; background-color: #FEF2F2;">
         <div class="d-flex justify-content-between align-items-center">
-            <span class="text-danger fw-bold">⚠️ @_errorMessage</span>
-            <button class="btn btn-sm btn-outline-danger" @onclick="LoadFlowchartsAsync">Retry</button>
+            <span class="text-danger fw-bold"><span aria-hidden="true">⚠️</span> @_errorMessage</span>
+            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="LoadFlowchartsAsync">Prøv igen</button>
         </div>
     </div>
 }
@@ -27,20 +27,20 @@ else if (_isLoading)
 {
     <div class="text-center py-5">
         <div class="spinner-border text-primary" role="status" style="color: var(--brand-blue, #20409A) !important;">
-            <span class="visually-hidden">Loading flowcharts...</span>
+            <span class="visually-hidden">Indlæser flowcharts...</span>
         </div>
-        <p class="text-muted mt-2">Loading game plans...</p>
+        <p class="text-muted mt-2">Indlæser kampplaner...</p>
     </div>
 }
 else if (!_flowcharts.Any())
 {
     <div class="card border-0 shadow-sm text-center py-5 bg-white" style="border-radius: 8px;">
         <div class="card-body">
-            <div style="font-size: 3rem;">🗺️</div>
-            <h4 class="fw-bold mt-2">No Flowcharts Yet</h4>
-            <p class="text-muted">Build a custom game plan or choose from BJJ starter templates like Closed Guard Matrix or Half Guard Underhook.</p>
-            <button class="btn btn-brand-primary" @onclick="OpenCreateModal">
-                Create First Flowchart
+            <div aria-hidden="true" style="font-size: 3rem;">🗺️</div>
+            <h2 class="h4 fw-bold mt-2">Ingen flowcharts endnu</h2>
+            <p class="text-muted">Opbyg din egen kampplan, eller vælg en BJJ-startskabelon som Closed Guard Matrix eller Half Guard Underhook.</p>
+            <button type="button" class="btn btn-brand-primary" @onclick="OpenCreateModal">
+                Opret første flowchart
             </button>
         </div>
     </div>
@@ -50,26 +50,26 @@ else
     <div class="row g-4">
         @foreach (var fc in _flowcharts)
         {
-            <div class="col-md-6 col-lg-4">
+            <div @key="fc.Id" class="col-md-6 col-lg-4">
                 <div class="card h-100 border-0 shadow-sm flowchart-card" style="border-radius: 8px; border-top: 4px solid #20409A !important;">
                     <div class="card-body d-flex flex-column p-4">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="fw-bold text-dark m-0">@fc.Title</h5>
+                            <h2 class="h5 fw-bold text-dark m-0">@fc.Title</h2>
                             <span class="badge" style="background-color: #EBF0FA; color: #20409A; font-weight: 700;">
-                                @fc.NodeCount @(fc.NodeCount == 1 ? "Node" : "Nodes")
+                                @fc.NodeCount @(fc.NodeCount == 1 ? "node" : "noder")
                             </span>
                         </div>
                         <p class="text-muted small flex-grow-1">
-                            @(string.IsNullOrWhiteSpace(fc.Description) ? "Custom game plan" : fc.Description)
+                            @(string.IsNullOrWhiteSpace(fc.Description) ? "Tilpasset kampplan" : fc.Description)
                         </p>
                         <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-auto small text-muted">
-                            <span>Updated @fc.UpdatedAt.ToString("MMM dd, yyyy")</span>
+                            <span>Opdateret @fc.UpdatedAt.ToString("dd.MM.yyyy")</span>
                             <div class="d-flex gap-2">
-                                <a href="flowcharts/@fc.Id" class="btn btn-sm btn-brand-primary px-3">
-                                    Open Canvas
+                                <a href="flowcharts/@fc.Id" class="btn btn-sm btn-brand-primary px-3" aria-label="Åbn @fc.Title">
+                                    Åbn lærred
                                 </a>
-                                <button class="btn btn-sm btn-outline-danger" title="Delete Flowchart" @onclick="() => DeleteFlowchartAsync(fc.Id)">
-                                    🗑️
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Slet @fc.Title" aria-label="Slet @fc.Title" @onclick="() => DeleteFlowchartAsync(fc.Id)">
+                                    <span aria-hidden="true">🗑️</span>
                                 </button>
                             </div>
                         </div>
@@ -80,66 +80,60 @@ else
     </div>
 }
 
-<!-- Create Flowchart Modal -->
-@if (_showCreateModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow" style="border-radius: 8px;">
-                <div class="modal-header text-white" style="background-color: #20409A;">
-                    <h5 class="modal-title fw-bold">🥋 New Grappling Flowchart</h5>
-                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseCreateModal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">START FROM TEMPLATE</label>
-                        <select class="form-select" @bind="_selectedPresetKey">
-                            <option value="">Blank Flowchart (Custom)</option>
-                            @foreach (var preset in _presets)
-                            {
-                                <option value="@preset.Key">@preset.Title</option>
-                            }
-                        </select>
-                        @if (!string.IsNullOrEmpty(_selectedPresetKey))
-                        {
-                            var selected = _presets.FirstOrDefault(p => p.Key == _selectedPresetKey);
-                            if (selected is not null)
-                            {
-                                <div class="form-text mt-1 text-primary">@selected.Description</div>
-                            }
-                        }
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">FLOWCHART TITLE</label>
-                        <input type="text" class="form-control" placeholder="e.g., Closed Guard Submission Matrix" @bind="_newTitle" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">DESCRIPTION (OPTIONAL)</label>
-                        <textarea class="form-control" rows="2" placeholder="Brief notes about the strategic focus..." @bind="_newDescription"></textarea>
-                    </div>
-
-                    @if (!string.IsNullOrEmpty(_createModalError))
+<!-- Opret flowchart-modal -->
+<ModalDialog IsOpen="_showCreateModal"
+             OnClose="CloseCreateModal"
+             Title="Nyt grappling-flowchart"
+             LightDismiss="false">
+    <ChildContent>
+        <form id="create-flowchart-form" @onsubmit="CreateFlowchartAsync" @onsubmit:preventDefault="true">
+            <div class="mb-3">
+                <label for="flowchart-preset" class="form-label fw-bold small text-muted">START FRA SKABELON</label>
+                <select id="flowchart-preset" class="form-select" @bind="_selectedPresetKey">
+                    <option value="">Tomt flowchart (tilpasset)</option>
+                    @foreach (var preset in _presets)
                     {
-                        <div class="text-danger small mt-2">@_createModalError</div>
+                        <option @key="preset.Key" value="@preset.Key">@preset.Title</option>
                     }
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-outline-secondary" @onclick="CloseCreateModal">Cancel</button>
-                    <button type="button" class="btn btn-brand-primary" @onclick="CreateFlowchartAsync" disabled="@_isCreating">
-                        @if (_isCreating)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                            <span>Creating...</span>
-                        }
-                        else
-                        {
-                            <span>Create Flowchart</span>
-                        }
-                    </button>
-                </div>
+                </select>
+                @if (!string.IsNullOrEmpty(_selectedPresetKey))
+                {
+                    var selected = _presets.FirstOrDefault(p => p.Key == _selectedPresetKey);
+                    if (selected is not null)
+                    {
+                        <div class="form-text mt-1 text-primary">@selected.Description</div>
+                    }
+                }
             </div>
-        </div>
-    </div>
-}
+
+            <div class="mb-3">
+                <label for="flowchart-title" class="form-label fw-bold small text-muted">TITEL PÅ FLOWCHART</label>
+                <input id="flowchart-title" type="text" class="form-control" required placeholder="F.eks. Closed Guard Submission Matrix" @bind="_newTitle" />
+            </div>
+
+            <div class="mb-3">
+                <label for="flowchart-description" class="form-label fw-bold small text-muted">BESKRIVELSE (VALGFRI)</label>
+                <textarea id="flowchart-description" class="form-control" rows="2" placeholder="Korte noter om det strategiske fokus..." @bind="_newDescription"></textarea>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_createModalError))
+            {
+                <div class="text-danger small mt-2" role="alert">@_createModalError</div>
+            }
+        </form>
+    </ChildContent>
+    <FooterContent>
+        <button type="button" class="btn btn-outline-secondary" @onclick="CloseCreateModal">Annuller</button>
+        <button type="submit" form="create-flowchart-form" class="btn btn-brand-primary" disabled="@_isCreating">
+            @if (_isCreating)
+            {
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <span>Opretter...</span>
+            }
+            else
+            {
+                <span>Opret flowchart</span>
+            }
+        </button>
+    </FooterContent>
+</ModalDialog>

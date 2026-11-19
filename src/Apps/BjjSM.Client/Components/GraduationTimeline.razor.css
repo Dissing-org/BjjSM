@@ -41,8 +41,8 @@
 
 .timeline-track {
     position: relative;
-    padding-left: 1.25rem;
-    border-left: 2px solid var(--brand-border, #E2E8F0);
+    padding-inline-start: 1.25rem;
+    border-inline-start: 2px solid var(--brand-border, #E2E8F0);
 }
 
 .timeline-item {
@@ -56,7 +56,7 @@
 
 .timeline-marker {
     position: absolute;
-    left: -1.68rem;
+    inset-inline-start: -1.68rem;
     top: 0.25rem;
     width: 12px;
     height: 12px;

@@ -1,96 +1,102 @@
 @inject IMemberApiClient MemberApi
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
-@if (IsOpen && Member is not null)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header text-white" style="background-color: var(--brand-blue); border-bottom: 2px solid var(--brand-yellow);">
-                    <h5 class="modal-title fw-bold">🎓 Award Belt / Stripe Promotion</h5>
-                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="Close"></button>
+<ModalDialog IsOpen="@(IsOpen && Member is not null)"
+             OnClose="Close"
+             Title="🎓 Tildel bælte- eller stribegraduering"
+             LightDismiss="false">
+    <ChildContent>
+        <form id="promote-member-form" @onsubmit="HandleSubmitAsync" @onsubmit:preventDefault>
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div id="promote-member-error" class="alert alert-danger py-2 small" role="alert">
+                    @_errorMessage
                 </div>
-                <div class="modal-body p-4 bg-white">
-                    @if (!string.IsNullOrEmpty(_errorMessage))
+            }
+
+            @if (Member is not null)
+            {
+                <div class="p-3 mb-3 rounded" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                    <div class="fw-bold text-dark">Graduerer: @Member.FirstName @Member.LastName</div>
+                    <div class="small text-muted mt-1">
+                        Nuværende grad: <span class="fw-semibold text-dark">@Member.CurrentRank.BeltName @(Member.CurrentRank.Stripes > 0 ? $"({Member.CurrentRank.Stripes} {(Member.CurrentRank.Stripes == 1 ? "stribe" : "striber")})" : "")</span>
+                    </div>
+                </div>
+            }
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="promote-member-ladder" class="form-label fw-bold text-dark small">Nyt bæltesystem</label>
+                    <select id="promote-member-ladder" class="form-select" @bind="_ladder" @bind:after="OnLadderChanged">
+                        <option value="@BeltLadder.Adult">Voksen</option>
+                        <option value="@BeltLadder.Kids">Børn</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label for="promote-member-belt" class="form-label fw-bold text-dark small">Ny bæltegrad</label>
+                    @if (_ladder == BeltLadder.Adult)
                     {
-                        <div class="alert alert-danger py-2 small" role="alert">
-                            @_errorMessage
-                        </div>
+                        <select id="promote-member-belt" class="form-select" @bind="_adultBelt">
+                            @foreach (var belt in Enum.GetValues<AdultBelt>())
+                            {
+                                <option value="@belt">@FormatAdultBelt(belt)</option>
+                            }
+                        </select>
                     }
-
-                    <div class="p-3 mb-3 rounded" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
-                        <div class="fw-bold text-dark">Promoting: @Member.FirstName @Member.LastName</div>
-                        <div class="small text-muted mt-1">
-                            Current Rank: <span class="fw-semibold text-dark">@Member.CurrentRank.BeltName @(Member.CurrentRank.Stripes > 0 ? $"({Member.CurrentRank.Stripes} Stripes)" : "")</span>
-                        </div>
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label fw-bold text-dark small">New Belt Ladder</label>
-                            <select class="form-select" @bind="_ladder" @bind:after="OnLadderChanged">
-                                <option value="@BeltLadder.Adult">Adult Ladder</option>
-                                <option value="@BeltLadder.Kids">Kids Ladder</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-bold text-dark small">New Belt Rank</label>
-                            @if (_ladder == BeltLadder.Adult)
+                    else
+                    {
+                        <select id="promote-member-belt" class="form-select" @bind="_kidsBelt">
+                            @foreach (var belt in Enum.GetValues<KidsBelt>())
                             {
-                                <select class="form-select" @bind="_adultBelt">
-                                    @foreach (var belt in Enum.GetValues<AdultBelt>())
-                                    {
-                                        <option value="@belt">@belt Belt</option>
-                                    }
-                                </select>
+                                <option value="@belt">@belt bælte</option>
                             }
-                            else
-                            {
-                                <select class="form-select" @bind="_kidsBelt">
-                                    @foreach (var belt in Enum.GetValues<KidsBelt>())
-                                    {
-                                        <option value="@belt">@belt Belt</option>
-                                    }
-                                </select>
-                            }
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Stripes / Degrees: @_stripes</label>
-                        <input type="range" class="form-range" min="0" max="4" step="1" @bind="_stripes" />
-                        <div class="d-flex justify-content-between text-muted small px-1">
-                            <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Promotion Date</label>
-                        <input type="date" class="form-control" @bind="_awardedAt" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Instructor Notes / Iron-Man Gauntlet Notes</label>
-                        <textarea class="form-control" rows="2" @bind="_notes" placeholder="e.g. Mastered open guard retention, passed ironman promotion round"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light border-top">
-                    <button type="button" class="btn btn-outline-secondary" @onclick="Close">Cancel</button>
-                    <button type="button" class="btn btn-brand-primary" disabled="@_isSaving" @onclick="PromoteAsync">
-                        @if (_isSaving)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                            <span>Saving...</span>
-                        }
-                        else
-                        {
-                            <span>Award Promotion</span>
-                        }
-                    </button>
+                        </select>
+                    }
                 </div>
             </div>
-        </div>
-    </div>
-}
+
+            <div class="mb-3">
+                <label for="promote-member-stripes" class="form-label fw-bold text-dark small">Striber / grader: @_stripes</label>
+                <input id="promote-member-stripes" type="range" class="form-range" min="0" max="4" step="1" @bind="_stripes" />
+                <div class="d-flex justify-content-between text-muted small px-1">
+                    <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="promote-member-date" class="form-label fw-bold text-dark small">Gradueringsdato</label>
+                <input id="promote-member-date"
+                       @ref="_dateInput"
+                       type="date"
+                       class="form-control"
+                       @bind="_awardedAt"
+                       required
+                       aria-invalid="@(_dateHasError ? "true" : null)"
+                       aria-describedby="@(_dateHasError ? "promote-member-error" : null)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="promote-member-notes" class="form-label fw-bold text-dark small">Instruktørnoter / graduering</label>
+                <textarea id="promote-member-notes" class="form-control" rows="2" @bind="_notes" placeholder="f.eks. Stærk open guard-retention, bestod gradueringssparring"></textarea>
+            </div>
+        </form>
+    </ChildContent>
+    <FooterContent>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Close">Annuller</button>
+        <button type="submit" form="promote-member-form" class="btn btn-brand-primary" disabled="@_isSaving">
+            @if (_isSaving)
+            {
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <span>Gemmer...</span>
+            }
+            else
+            {
+                <span>Tildel graduering</span>
+            }
+        </button>
+    </FooterContent>
+</ModalDialog>
 
 @code {
     [Parameter] public bool IsOpen { get; set; }
@@ -105,7 +111,22 @@
     private DateTime _awardedAt = DateTime.UtcNow;
     private string? _notes;
     private string? _errorMessage;
+    private bool _dateHasError;
     private bool _isSaving;
+    private ElementReference _dateInput;
+    private IJSObjectReference? _interopModule;
+
+    private static string FormatAdultBelt(AdultBelt belt) => belt switch
+    {
+        AdultBelt.White => "Hvidt bælte",
+        AdultBelt.Blue => "Blåt bælte",
+        AdultBelt.Purple => "Lilla bælte",
+        AdultBelt.Brown => "Brunt bælte",
+        AdultBelt.Black => "Sort bælte",
+        AdultBelt.Coral => "Koralbælte",
+        AdultBelt.Red => "Rødt bælte",
+        _ => $"{belt} bælte"
+    };
 
     protected override void OnParametersSet()
     {
@@ -131,14 +152,26 @@
     private async Task Close()
     {
         _errorMessage = null;
+        _dateHasError = false;
         IsOpen = false;
         await IsOpenChanged.InvokeAsync(false);
     }
 
-    private async Task PromoteAsync()
+    private async Task HandleSubmitAsync()
     {
         if (Member is null) return;
+
         _errorMessage = null;
+        _dateHasError = false;
+
+        if (_awardedAt == default)
+        {
+            _dateHasError = true;
+            _errorMessage = "Gradueringsdato er påkrævet.";
+            await FocusElementAsync(_dateInput);
+            return;
+        }
+
         _isSaving = true;
 
         try
@@ -149,7 +182,7 @@
                 KidsBelt: _ladder == BeltLadder.Kids ? _kidsBelt : null,
                 Stripes: _stripes,
                 AwardedAt: _awardedAt,
-                AwardedBy: Guid.NewGuid(), // Head instructor
+                AwardedBy: Guid.NewGuid(),
                 Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()
             );
 
@@ -166,6 +199,49 @@
         finally
         {
             _isSaving = false;
+        }
+    }
+
+    private async Task FocusElementAsync(ElementReference element)
+    {
+        try
+        {
+            _interopModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/app-interop.js");
+            await _interopModule.InvokeVoidAsync("focusElement", element);
+        }
+        catch (JSException)
+        {
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interopModule is not null)
+        {
+            try
+            {
+                await _interopModule.DisposeAsync();
+            }
+            catch (JSException)
+            {
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            _interopModule = null;
         }
     }
 }

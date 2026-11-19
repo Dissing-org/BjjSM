@@ -1,27 +1,27 @@
 @page "/spaced-repetition"
 
-<PageTitle>BjjSM - Spaced Repetition &amp; BJJ Recall</PageTitle>
+<PageTitle>@CurrentPageTitle</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
-        <h1 class="h2 fw-bold text-dark m-0">🧠 Spaced Repetition &amp; Tactical Recall</h1>
-        <p class="text-muted m-0">Customizable BJJ field templates &bull; Per-deck SM-2 scheduling &bull; Due &amp; Cram study sessions</p>
+        <h1 class="h2 fw-bold text-dark m-0"><span aria-hidden="true">🧠</span> Spaced Repetition &amp; Taktisk Genkaldelse</h1>
+        <p class="text-muted m-0">Tilpassede BJJ-feltskabeloner &bull; SM-2-planlægning pr. sæt &bull; Forfaldne kort &amp; hurtigtræning</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        <button class="btn @(_activeView == "dashboard" ? "btn-brand-primary" : "btn-outline-dark") fw-bold" @onclick="SwitchToDashboard">
-            📊 Decks &amp; Mastery
+        <button type="button" class="btn @(_activeView == "dashboard" ? "btn-brand-primary" : "btn-outline-dark") fw-bold" @onclick="SwitchToDashboard">
+            <span aria-hidden="true">📊</span> Sæt &amp; Mestring
         </button>
-        <button class="btn @(_activeView == "templates" ? "btn-brand-primary" : "btn-outline-dark") fw-bold" @onclick="OpenTemplateManager">
-            🧩 Field Templates
+        <button type="button" class="btn @(_activeView == "templates" ? "btn-brand-primary" : "btn-outline-dark") fw-bold" @onclick="OpenTemplateManager">
+            <span aria-hidden="true">🧩</span> Feltskabeloner
         </button>
-        <button class="btn btn-outline-dark fw-bold" @onclick="OpenNewDeckModal">
-            ➕ New Deck
+        <button type="button" class="btn btn-outline-dark fw-bold" @onclick="OpenNewDeckModal">
+            <span aria-hidden="true">➕</span> Nyt sæt
         </button>
-        <button class="btn btn-outline-dark fw-bold" @onclick="OpenImportJsonModal">
-            📥 Import JSON
+        <button type="button" class="btn btn-outline-dark fw-bold" @onclick="OpenImportJsonModal">
+            <span aria-hidden="true">📥</span> Importer JSON
         </button>
-        <button class="btn btn-outline-danger fw-bold" @onclick="ResetStarterDecksAsync" title="Restore factory starter decks and technique GIFs">
-            🔄 Reset Starter Decks
+        <button type="button" class="btn btn-outline-danger fw-bold" @onclick="RequestResetStarterDecks" title="Gendan standardstartsæt og teknik-GIF'er">
+            <span aria-hidden="true">🔄</span> Nulstil startsæt
         </button>
     </div>
 </div>
@@ -30,21 +30,21 @@
 {
     <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center justify-content-between mb-3 shadow-sm" role="alert">
         <div class="d-flex align-items-center gap-2">
-            <span>⚠️</span>
+            <span aria-hidden="true">⚠️</span>
             <span>@_errorMessage</span>
         </div>
-        <button type="button" class="btn-close" @onclick="() => _errorMessage = null" aria-label="Close"></button>
+        <button type="button" class="btn-close" @onclick="() => _errorMessage = null" aria-label="Luk fejlbesked"></button>
     </div>
 }
 
 @if (!string.IsNullOrEmpty(_successMessage))
 {
-    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center justify-content-between mb-3 shadow-sm" role="alert">
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center justify-content-between mb-3 shadow-sm" role="status" aria-live="polite">
         <div class="d-flex align-items-center gap-2">
-            <span>✅</span>
+            <span aria-hidden="true">✅</span>
             <span>@_successMessage</span>
         </div>
-        <button type="button" class="btn-close" @onclick="() => _successMessage = null" aria-label="Close"></button>
+        <button type="button" class="btn-close" @onclick="() => _successMessage = null" aria-label="Luk statusbesked"></button>
     </div>
 }
 
@@ -52,9 +52,9 @@
 {
     <div class="text-center py-5">
         <div class="spinner-border" style="color: #20409A;" role="status">
-            <span class="visually-hidden">Loading spaced repetition system...</span>
+            <span class="visually-hidden">Indlæser spaced repetition-system...</span>
         </div>
-        <p class="text-muted mt-2">Loading decks, templates, and SM-2 schedule...</p>
+        <p class="text-muted mt-2">Indlæser sæt, skabeloner og SM-2-plan...</p>
     </div>
 }
 else if (_overview is not null)
@@ -64,40 +64,40 @@ else if (_overview is not null)
         <div class="row g-3 mb-4">
             <div class="col-md-3 col-sm-6">
                 <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-top: 4px solid #20409A !important; border-radius: 8px;">
-                    <div class="text-muted small fw-bold text-uppercase">Due Right Now</div>
+                    <div class="text-muted small fw-bold text-uppercase">Forfaldne nu</div>
                     <div class="display-6 fw-bold" style="color: #20409A;">@_overview.TotalDueNow</div>
-                    <div class="small text-muted">Across @_overview.Decks.Count active decks</div>
+                    <div class="small text-muted">På tværs af @_overview.Decks.Count aktive sæt</div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
                 <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-top: 4px solid #FFEE00 !important; border-radius: 8px;">
-                    <div class="text-muted small fw-bold text-uppercase">Retention Rate</div>
+                    <div class="text-muted small fw-bold text-uppercase">Hukommelsesrate</div>
                     <div class="display-6 fw-bold text-dark">@_overview.OverallRetentionPercent%</div>
-                    <div class="small text-muted">Good/Easy over @_overview.TotalReviewsAllTime total reviews</div>
+                    <div class="small text-muted">God/Let ud af @_overview.TotalReviewsAllTime gennemgange</div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
                 <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-top: 4px solid #050505 !important; border-radius: 8px;">
-                    <div class="text-muted small fw-bold text-uppercase">Reviews Today</div>
+                    <div class="text-muted small fw-bold text-uppercase">Gennemgange i dag</div>
                     <div class="display-6 fw-bold text-dark">@_overview.ReviewsTodayCount</div>
-                    <div class="small text-muted">Completed today (UTC)</div>
+                    <div class="small text-muted">Fuldført i dag (UTC)</div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
                 <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-top: 4px solid #20409A !important; border-radius: 8px;">
-                    <div class="text-muted small fw-bold text-uppercase">Total Flashcards</div>
+                    <div class="text-muted small fw-bold text-uppercase">Kort i alt</div>
                     <div class="display-6 fw-bold text-dark">@_overview.TotalCards</div>
-                    <div class="small text-muted">@_overview.Templates.Count custom field templates</div>
+                    <div class="small text-muted">@_overview.Templates.Count tilpassede feltskabeloner</div>
                 </div>
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm p-3 mb-4 bg-white" style="border-radius: 8px;">
-            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                <h6 class="fw-bold text-dark m-0">📅 14-Day Due Review Forecast</h6>
-                <span class="text-muted small">Scheduled workload across all active decks</span>
-            </div>
-            <div class="d-flex align-items-end gap-2 pt-2" style="height: 110px; overflow-x: auto;">
+        <figure class="card border-0 shadow-sm p-3 mb-4 bg-white" style="border-radius: 8px;">
+            <figcaption class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <h2 class="h6 fw-bold text-dark m-0"><span aria-hidden="true">📅</span> 14-dages gennemgangsprognose</h2>
+                <span class="text-muted small">Planlagt arbejdsbyrde på tværs af alle aktive sæt</span>
+            </figcaption>
+            <div class="d-flex align-items-end gap-2 pt-2" style="height: 110px; overflow-x: auto;" aria-hidden="true">
                 @{
                     var maxForecast = Math.Max(1, _overview.Forecast14Days.Max(f => f.DueCount));
                 }
@@ -112,7 +112,13 @@ else if (_overview is not null)
                     </div>
                 }
             </div>
-        </div>
+            <ul class="visually-hidden">
+                @foreach (var day in _overview.Forecast14Days)
+                {
+                    <li @key="day.DateUtc">@day.DateLabel: @day.DueCount forfaldne kort</li>
+                }
+            </ul>
+        </figure>
 
         <div class="row g-4">
             @foreach (var deck in _overview.Decks)
@@ -130,12 +136,12 @@ else if (_overview is not null)
                             <div>
                                 <div class="d-flex align-items-center gap-2 mb-1">
                                     <span class="badge" style="background-color: #EBF0FA; color: #20409A; font-weight: 700;">@deck.Category</span>
-                                    <span class="badge bg-light text-dark border">🧩 @deck.TemplateName</span>
+                                    <span class="badge bg-light text-dark border"><span aria-hidden="true">🧩</span> @deck.TemplateName</span>
                                 </div>
-                                <h4 class="fw-bold text-dark m-0">@deck.Name</h4>
+                                <h2 class="h4 fw-bold text-dark m-0">@deck.Name</h2>
                             </div>
                             <span class="badge px-3 py-2" style="background-color: #FFEE00; color: #050505; font-weight: 800; font-size: 0.85rem; border: 1px solid #050505;">
-                                @deck.DueNowCount Due
+                                @deck.DueNowCount forfaldne
                             </span>
                         </div>
 
@@ -143,43 +149,43 @@ else if (_overview is not null)
 
                         <div class="mb-3">
                             <div class="d-flex justify-content-between small mb-1">
-                                <span class="fw-bold text-dark">Maturity Distribution (@deck.TotalCards cards)</span>
-                                <span class="text-muted">Steps: @deck.SchedulingOptions.LearningStepsMinutes min &bull; Ease: @deck.SchedulingOptions.StartingEaseFactor</span>
+                                <span class="fw-bold text-dark">Modenhedsfordeling (@deck.TotalCards kort)</span>
+                                <span class="text-muted">Trin: @deck.SchedulingOptions.LearningStepsMinutes min &bull; Lethed: @deck.SchedulingOptions.StartingEaseFactor</span>
                             </div>
-                            <div class="progress" style="height: 12px; background-color: #F8FAFC; border: 1px solid #E2E8F0;">
-                                <div class="progress-bar" style="width: @(newPct)%; background-color: #D7E3F8;" title="New: @deck.NewCount"></div>
-                                <div class="progress-bar" style="width: @(learnPct)%; background-color: #FFEE00;" title="Learning: @deck.LearningCount"></div>
-                                <div class="progress-bar" style="width: @(youngPct)%; background-color: #20409A;" title="Young (<21d): @deck.YoungCount"></div>
-                                <div class="progress-bar" style="width: @(maturePct)%; background-color: #050505;" title="Mature (21d+): @deck.MatureCount"></div>
-                                <div class="progress-bar" style="width: @(suspPct)%; background-color: #94A3B8;" title="Suspended: @deck.SuspendedCount"></div>
+                            <div class="progress" style="height: 12px; background-color: #F8FAFC; border: 1px solid #E2E8F0;" role="group" aria-label="@($"Modenhedsfordeling for {deck.Name}")">
+                                <div class="progress-bar" role="progressbar" style="width: @(newPct)%; background-color: #D7E3F8;" title="Nye: @deck.NewCount" aria-label="@($"Nye kort: {deck.NewCount}")" aria-valuenow="@deck.NewCount" aria-valuemin="0" aria-valuemax="@deck.TotalCards"></div>
+                                <div class="progress-bar" role="progressbar" style="width: @(learnPct)%; background-color: #FFEE00;" title="Under indlæring: @deck.LearningCount" aria-label="@($"Kort under indlæring: {deck.LearningCount}")" aria-valuenow="@deck.LearningCount" aria-valuemin="0" aria-valuemax="@deck.TotalCards"></div>
+                                <div class="progress-bar" role="progressbar" style="width: @(youngPct)%; background-color: #20409A;" title="Unge (&lt;21d): @deck.YoungCount" aria-label="@($"Unge kort under 21 dage: {deck.YoungCount}")" aria-valuenow="@deck.YoungCount" aria-valuemin="0" aria-valuemax="@deck.TotalCards"></div>
+                                <div class="progress-bar" role="progressbar" style="width: @(maturePct)%; background-color: #050505;" title="Modne (21d+): @deck.MatureCount" aria-label="@($"Modne kort over 21 dage: {deck.MatureCount}")" aria-valuenow="@deck.MatureCount" aria-valuemin="0" aria-valuemax="@deck.TotalCards"></div>
+                                <div class="progress-bar" role="progressbar" style="width: @(suspPct)%; background-color: #94A3B8;" title="Sat på pause: @deck.SuspendedCount" aria-label="@($"Kort sat på pause: {deck.SuspendedCount}")" aria-valuenow="@deck.SuspendedCount" aria-valuemin="0" aria-valuemax="@deck.TotalCards"></div>
                             </div>
                             <div class="d-flex justify-content-between flex-wrap gap-2 mt-2 small" style="font-size: 0.75rem;">
-                                <span><strong style="color: #20409A;">● New:</strong> @deck.NewCount</span>
-                                <span><strong style="color: #997A00;">● Learning:</strong> @deck.LearningCount</span>
-                                <span><strong style="color: #20409A;">● Young:</strong> @deck.YoungCount</span>
-                                <span><strong style="color: #050505;">● Mature:</strong> @deck.MatureCount</span>
-                                <span><strong class="text-muted">● Suspended:</strong> @deck.SuspendedCount</span>
+                                <span><strong style="color: #20409A;"><span aria-hidden="true">●</span> Nye:</strong> @deck.NewCount</span>
+                                <span><strong style="color: #997A00;"><span aria-hidden="true">●</span> Indlæring:</strong> @deck.LearningCount</span>
+                                <span><strong style="color: #20409A;"><span aria-hidden="true">●</span> Unge:</strong> @deck.YoungCount</span>
+                                <span><strong style="color: #050505;"><span aria-hidden="true">●</span> Modne:</strong> @deck.MatureCount</span>
+                                <span><strong class="text-muted"><span aria-hidden="true">●</span> På pause:</strong> @deck.SuspendedCount</span>
                             </div>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2 mt-auto pt-3 border-top">
-                            <button class="btn btn-brand-primary fw-bold btn-sm px-3" @onclick="() => StartDueStudySession(deck.Id)">
-                                ▶ Study Due (@deck.DueNowCount)
+                            <button type="button" class="btn btn-brand-primary fw-bold btn-sm px-3" aria-label="@($"Øv forfaldne kort i {deck.Name} ({deck.DueNowCount})")" @onclick="() => StartDueStudySession(deck.Id)">
+                                <span aria-hidden="true">▶</span> Øv forfaldne (@deck.DueNowCount)
                             </button>
-                            <button class="btn btn-sm fw-bold" style="background-color: #FFEE00; color: #050505; border: 1px solid #050505;" @onclick="() => OpenCramBuilder(deck.Id)">
-                                ⚡ Custom Cram
+                            <button type="button" class="btn btn-sm fw-bold" style="background-color: #FFEE00; color: #050505; border: 1px solid #050505;" aria-label="@($"Tilpasset hurtigtræning for {deck.Name}")" @onclick="() => OpenCramBuilder(deck.Id)">
+                                <span aria-hidden="true">⚡</span> Hurtigtræning
                             </button>
-                            <button class="btn btn-outline-dark btn-sm fw-semibold" @onclick="() => OpenCardBrowser(deck.Id)">
-                                🗂️ Manage Cards (@deck.TotalCards)
+                            <button type="button" class="btn btn-outline-dark btn-sm fw-semibold" aria-label="@($"Administrer kort i {deck.Name} ({deck.TotalCards})")" @onclick="() => OpenCardBrowser(deck.Id)">
+                                <span aria-hidden="true">🗂️</span> Kort (@deck.TotalCards)
                             </button>
-                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => OpenEditDeckModal(deck)">
-                                ⚙️ SM-2 Settings
+                            <button type="button" class="btn btn-outline-secondary btn-sm" aria-label="@($"SM-2 indstillinger for {deck.Name}")" @onclick="() => OpenEditDeckModal(deck)">
+                                <span aria-hidden="true">⚙️</span> SM-2
                             </button>
-                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => ExportDeckAsync(deck)">
-                                📤 Export
+                            <button type="button" class="btn btn-outline-secondary btn-sm" aria-label="@($"Eksporter {deck.Name} som JSON")" @onclick="() => ExportDeckAsync(deck)">
+                                <span aria-hidden="true">📤</span> Eksporter
                             </button>
-                            <button class="btn btn-outline-danger btn-sm ms-auto" @onclick="() => DeleteDeckAsync(deck.Id)">
-                                🗑️
+                            <button type="button" class="btn btn-outline-danger btn-sm ms-auto" aria-label="@($"Slet sættet {deck.Name}")" @onclick="() => DeleteDeckAsync(deck.Id)">
+                                <span aria-hidden="true">🗑️</span>
                             </button>
                         </div>
                     </div>
@@ -191,53 +197,55 @@ else if (_overview is not null)
     {
         <div class="card border-0 shadow-sm p-4 bg-white mx-auto" style="max-width: 680px; border-radius: 8px; border-top: 5px solid #FFEE00 !important;">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="fw-bold text-dark m-0">⚡ Custom Study / Cram Session: @ActiveDeck.Name</h4>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="SwitchToDashboard">Back</button>
+                <h2 class="h4 fw-bold text-dark m-0"><span aria-hidden="true">⚡</span> Tilpasset hurtigtræning: @ActiveDeck.Name</h2>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="SwitchToDashboard">Tilbage</button>
             </div>
             <p class="text-muted small">
-                Build an on-demand drill queue filtered by tag or maturity tier, independent of due dates.
+                Byg en træningskø efter behov filtreret på tag eller modenhedstrin uafhængigt af forfaldsdatoer.
             </p>
 
-            <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold small">Filter by Tag</label>
-                    <select class="form-select" @bind="_cramTagFilter">
-                        @foreach (var tag in GetDeckTags(ActiveDeck))
-                        {
-                            <option @key="tag" value="@tag">@tag</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold small">Filter by Maturity Tier</label>
-                    <select class="form-select" @bind="_cramTierFilter">
-                        <option value="-1">All Active Tiers</option>
-                        <option value="0">New Only</option>
-                        <option value="1">Learning / Relearning Only</option>
-                        <option value="2">Young (&lt;21 days)</option>
-                        <option value="3">Mature (21+ days)</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold small">Maximum Cards in Session</label>
-                    <input type="number" class="form-control" min="1" max="200" @bind="_cramMaxCards" />
-                </div>
-                <div class="col-md-6 d-flex align-items-end">
-                    <div class="form-check p-2 border rounded w-100 bg-light">
-                        <input class="form-check-input ms-1 me-2" type="checkbox" id="cramReschedCheck" @bind="_cramReschedule" />
-                        <label class="form-check-label fw-semibold small" for="cramReschedCheck">
-                            Apply SM-2 reschedule on rating
-                        </label>
+            <form @onsubmit="LaunchCustomCramSession" @onsubmit:preventDefault>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="cram-tag-filter" class="form-label fw-bold small">Filtrer efter tag</label>
+                        <select id="cram-tag-filter" class="form-select" @bind="_cramTagFilter">
+                            @foreach (var tag in GetDeckTags(ActiveDeck))
+                            {
+                                <option @key="tag" value="@tag">@tag</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="cram-tier-filter" class="form-label fw-bold small">Filtrer efter modenhedstrin</label>
+                        <select id="cram-tier-filter" class="form-select" @bind="_cramTierFilter">
+                            <option value="-1">Alle aktive trin</option>
+                            <option value="0">Kun nye</option>
+                            <option value="1">Kun under indlæring</option>
+                            <option value="2">Unge (&lt;21 dage)</option>
+                            <option value="3">Modne (21+ dage)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="cram-max-cards" class="form-label fw-bold small">Maks. antal kort i session</label>
+                        <input id="cram-max-cards" type="number" class="form-control" min="1" max="200" required @bind="_cramMaxCards" />
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <div class="form-check p-2 border rounded w-100 bg-light">
+                            <input class="form-check-input ms-1 me-2" type="checkbox" id="cram-resched-check" @bind="_cramReschedule" />
+                            <label class="form-check-label fw-semibold small" for="cram-resched-check">
+                                Opdater SM-2-plan ved vurdering
+                            </label>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="d-flex justify-content-end gap-2">
-                <button class="btn btn-outline-secondary" @onclick="SwitchToDashboard">Cancel</button>
-                <button class="btn btn-brand-primary fw-bold px-4" @onclick="LaunchCustomCramSession">
-                    🚀 Start Cram Session
-                </button>
-            </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="SwitchToDashboard">Annuller</button>
+                    <button type="submit" class="btn btn-brand-primary fw-bold px-4">
+                        <span aria-hidden="true">🚀</span> Start hurtigtræning
+                    </button>
+                </div>
+            </form>
         </div>
     }
     else if (_activeView == "study" && ActiveDeck is not null)
@@ -249,36 +257,36 @@ else if (_overview is not null)
                     @if (_isCramSession)
                     {
                         <span class="badge" style="background-color: #FFEE00; color: #050505; border: 1px solid #050505;">
-                            ⚡ Cram Mode (@(_cramReschedule ? "Rescheduling ON" : "Practice Only"))
+                            <span aria-hidden="true">⚡</span> Hurtigtræning (@(_cramReschedule ? "SM-2 aktiv" : "Kun øvelse"))
                         </span>
                     }
                     else
                     {
-                        <span class="badge bg-dark text-white">📅 Scheduled Due Queue</span>
+                        <span class="badge bg-dark text-white"><span aria-hidden="true">📅</span> Planlagt forfaldskø</span>
                     }
                 </div>
                 <div class="d-flex align-items-center gap-3">
                     <span class="fw-bold small text-dark">
-                        Progress: @_sessionCompletedCount completed &bull; @(Math.Max(0, _sessionQueue.Count - _sessionCurrentIndex)) remaining
+                        Fremdrift: @_sessionCompletedCount gennemført &bull; @(Math.Max(0, _sessionQueue.Count - _sessionCurrentIndex)) tilbage
                     </span>
-                    <button class="btn btn-sm btn-outline-dark fw-semibold" @onclick="SwitchToDashboard">Exit Session</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark fw-semibold" @onclick="SwitchToDashboard">Afslut session</button>
                 </div>
             </div>
 
             @if (CurrentSessionCard is null)
             {
                 <div class="card border-0 shadow-sm p-5 text-center bg-white" style="border-radius: 8px; border-top: 5px solid #20409A !important;">
-                    <div class="display-4 mb-2">🥋</div>
-                    <h3 class="fw-bold text-dark">Session Complete!</h3>
+                    <div class="display-4 mb-2" aria-hidden="true">🥋</div>
+                    <h2 class="h3 fw-bold text-dark">Session fuldført!</h2>
                     <p class="text-muted mb-4">
-                        You completed <strong>@_sessionCompletedCount</strong> card reviews in <strong>@ActiveDeck.Name</strong>.
+                        Du gennemførte <strong>@_sessionCompletedCount</strong> kortgennemgange i <strong>@ActiveDeck.Name</strong>.
                     </p>
                     <div class="d-flex justify-content-center gap-2">
-                        <button class="btn btn-brand-primary fw-bold px-4" @onclick="SwitchToDashboard">
-                            Return to Decks Dashboard
+                        <button type="button" class="btn btn-brand-primary fw-bold px-4" @onclick="SwitchToDashboard">
+                            Tilbage til oversigten
                         </button>
-                        <button class="btn btn-outline-dark fw-bold" @onclick="() => OpenCramBuilder(ActiveDeck.Id)">
-                            ⚡ Run Custom Cram
+                        <button type="button" class="btn btn-outline-dark fw-bold" @onclick="() => OpenCramBuilder(ActiveDeck.Id)">
+                            <span aria-hidden="true">⚡</span> Start hurtigtræning
                         </button>
                     </div>
                 </div>
@@ -301,12 +309,12 @@ else if (_overview is not null)
                             }
                         </div>
                         <span class="text-muted small">
-                            Interval: @card.IntervalDays d &bull; Ease: @card.EaseFactor
+                            Interval: @card.IntervalDays d &bull; Lethed: @card.EaseFactor
                         </span>
                     </div>
 
                     <div class="mb-4">
-                        <div class="text-uppercase fw-bold small mb-2" style="color: #20409A; letter-spacing: 0.5px;">Front (Cue / Prompt)</div>
+                        <div class="text-uppercase fw-bold small mb-2" style="color: #20409A; letter-spacing: 0.5px;">Forside (Spørgsmål / Situation)</div>
                         @foreach (var field in frontFields)
                         {
                             <div @key="field.Id" class="mb-3">
@@ -318,8 +326,8 @@ else if (_overview is not null)
 
                     @if (_isAnswerRevealed)
                     {
-                        <div class="pt-3 border-top" style="border-top: 2px dashed #E2E8F0 !important;">
-                            <div class="text-uppercase fw-bold small mb-2" style="color: #997A00; letter-spacing: 0.5px;">Back (Response &amp; Mechanics)</div>
+                        <div @ref="_answerRegionRef" tabindex="-1" class="pt-3 border-top" style="border-top: 2px dashed #E2E8F0 !important;">
+                            <div class="text-uppercase fw-bold small mb-2" style="color: #997A00; letter-spacing: 0.5px;">Bagside (Svar &amp; Mekanik)</div>
                             @foreach (var field in backFields)
                             {
                                 @if (!string.IsNullOrWhiteSpace(field.Value))
@@ -350,8 +358,8 @@ else if (_overview is not null)
                     else
                     {
                         <div class="mt-auto pt-4 text-center">
-                            <button class="btn btn-brand-primary btn-lg fw-bold px-5 shadow-sm" @onclick="RevealAnswer">
-                                👀 Reveal Answer
+                            <button type="button" class="btn btn-brand-primary btn-lg fw-bold px-5 shadow-sm" @onclick="RevealAnswer">
+                                <span aria-hidden="true">👀</span> Vis svar
                             </button>
                         </div>
                     }
@@ -361,39 +369,39 @@ else if (_overview is not null)
                 {
                     <div class="row g-2">
                         <div class="col-3">
-                            <button class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
+                            <button type="button" class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
                                     style="background-color: #FFFFFF; color: #050505; border: 2px solid #050505;"
                                     disabled="@_isSaving"
                                     @onclick="() => RateCurrentCardAsync(1)">
                                 <span class="small text-muted">@card.IntervalPreview.Again</span>
-                                <span>1 &bull; Again</span>
+                                <span>1 &bull; Igen</span>
                             </button>
                         </div>
                         <div class="col-3">
-                            <button class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
+                            <button type="button" class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
                                     style="background-color: #F8FAFC; color: #050505; border: 2px solid #20409A;"
                                     disabled="@_isSaving"
                                     @onclick="() => RateCurrentCardAsync(2)">
                                 <span class="small text-muted">@card.IntervalPreview.Hard</span>
-                                <span>2 &bull; Hard</span>
+                                <span>2 &bull; Svær</span>
                             </button>
                         </div>
                         <div class="col-3">
-                            <button class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
+                            <button type="button" class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
                                     style="background-color: #20409A; color: #FFFFFF; border: 2px solid #20409A;"
                                     disabled="@_isSaving"
                                     @onclick="() => RateCurrentCardAsync(3)">
                                 <span class="small" style="color: #FFEE00;">@card.IntervalPreview.Good</span>
-                                <span>3 &bull; Good</span>
+                                <span>3 &bull; God</span>
                             </button>
                         </div>
                         <div class="col-3">
-                            <button class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
+                            <button type="button" class="btn w-100 py-3 fw-bold shadow-sm d-flex flex-column align-items-center"
                                     style="background-color: #FFEE00; color: #050505; border: 2px solid #050505;"
                                     disabled="@_isSaving"
                                     @onclick="() => RateCurrentCardAsync(4)">
                                 <span class="small fw-bold">@card.IntervalPreview.Easy</span>
-                                <span>4 &bull; Easy</span>
+                                <span>4 &bull; Let</span>
                             </button>
                         </div>
                     </div>
@@ -408,54 +416,60 @@ else if (_overview is not null)
                 <div class="card border-0 shadow-sm p-3 bg-white" style="border-radius: 8px;">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <div>
-                            <h5 class="fw-bold text-dark m-0">🗂️ Cards in @ActiveDeck.Name</h5>
-                            <span class="text-muted small">Template: @ActiveDeck.TemplateName</span>
+                            <h2 class="h5 fw-bold text-dark m-0"><span aria-hidden="true">🗂️</span> Kort i @ActiveDeck.Name</h2>
+                            <span class="text-muted small">Skabelon: @ActiveDeck.TemplateName</span>
                         </div>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-brand-primary fw-bold" @onclick="() => StartDueStudySession(ActiveDeck.Id)">
-                                ▶ Study Due
+                            <button type="button" class="btn btn-sm btn-brand-primary fw-bold" @onclick="() => StartDueStudySession(ActiveDeck.Id)">
+                                <span aria-hidden="true">▶</span> Øv forfaldne
                             </button>
-                            <button class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => InitializeCardEditor(null)">
-                                ➕ New Card
+                            <button type="button" class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => InitializeCardEditor(null)">
+                                <span aria-hidden="true">➕</span> Nyt kort
                             </button>
                         </div>
                     </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-5">
-                            <input type="text" class="form-control form-control-sm" placeholder="Search fields or tags..." @bind="_browserSearch" @bind:event="oninput" />
+                    <search aria-label="Filtrer kort i sættet">
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-5">
+                                <label for="browser-search" class="visually-hidden">Søg i felter eller tags</label>
+                                <input id="browser-search" type="search" class="form-control form-control-sm" placeholder="Søg i felter eller tags..." @bind="_browserSearch" @bind:event="oninput" />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="browser-tag-filter" class="visually-hidden">Filtrer efter tag</label>
+                                <select id="browser-tag-filter" class="form-select form-select-sm" @bind="_browserTagFilter">
+                                    @foreach (var t in GetDeckTags(ActiveDeck))
+                                    {
+                                        <option @key="t" value="@t">Tag: @t</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="browser-tier-filter" class="visually-hidden">Filtrer efter modenhedstrin</label>
+                                <select id="browser-tier-filter" class="form-select form-select-sm" @bind="_browserTierFilter">
+                                    <option value="-1">Alle trin</option>
+                                    <option value="0">Ny</option>
+                                    <option value="1">Under indlæring</option>
+                                    <option value="2">Ung</option>
+                                    <option value="3">Moden</option>
+                                    <option value="4">Sat på pause</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <select class="form-select form-select-sm" @bind="_browserTagFilter">
-                                @foreach (var t in GetDeckTags(ActiveDeck))
-                                {
-                                    <option @key="t" value="@t">Tag: @t</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" @bind="_browserTierFilter">
-                                <option value="-1">All Tiers</option>
-                                <option value="0">New</option>
-                                <option value="1">Learning</option>
-                                <option value="2">Young</option>
-                                <option value="3">Mature</option>
-                                <option value="4">Suspended</option>
-                            </select>
-                        </div>
-                    </div>
+                    </search>
 
                     <div class="d-flex flex-column gap-2">
                         @foreach (var card in FilteredBrowserCards)
                         {
                             var isEditing = _editingCardId == card.Id;
+                            var cardTitle = GetPrimaryPromptPreview(card);
                             <div @key="card.Id" class="p-3 border rounded @(isEditing ? "bg-light border-primary" : "bg-white")">
                                 <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
                                     <div class="fw-bold text-dark">
-                                        @GetPrimaryPromptPreview(card)
+                                        @cardTitle
                                         @if (card.FieldValues.Any(f => f.FieldType == 4 && !string.IsNullOrWhiteSpace(f.Value)))
                                         {
-                                            <span class="badge ms-1" style="background-color: #EBF0FA; color: #20409A; border: 1px solid #20409A; font-size: 0.72rem;">🥋 Animation</span>
+                                            <span class="badge ms-1" style="background-color: #EBF0FA; color: #20409A; border: 1px solid #20409A; font-size: 0.72rem;"><span aria-hidden="true">🥋</span> Animation</span>
                                         }
                                     </div>
                                     <span class="badge" style="@GetMaturityBadgeStyle(card.MaturityTier)">
@@ -466,27 +480,27 @@ else if (_overview is not null)
 
                                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2 border-top small">
                                     <div class="d-flex gap-1 flex-wrap align-items-center">
-                                        <span class="text-muted">Due: @card.DueAt.ToString("MMM dd HH:mm")</span>
-                                        <span class="text-muted">&bull; Ivl: @card.IntervalDays d</span>
-                                        <span class="text-muted">&bull; Ease: @card.EaseFactor</span>
+                                        <span class="text-muted">Forfald: @card.DueAt.ToString("MMM dd HH:mm")</span>
+                                        <span class="text-muted">&bull; Int: @card.IntervalDays d</span>
+                                        <span class="text-muted">&bull; Lethed: @card.EaseFactor</span>
                                         @foreach (var tag in card.Tags)
                                         {
                                             <span @key="tag" class="badge bg-light text-dark border">#@tag</span>
                                         }
                                     </div>
                                     <div class="d-flex gap-1 flex-wrap">
-                                        <button class="btn btn-sm btn-outline-dark py-0 px-2" @onclick="() => InitializeCardEditor(card)">Edit</button>
+                                        <button type="button" class="btn btn-sm btn-outline-dark py-0 px-2" aria-label="@($"Rediger kortet {cardTitle}")" @onclick="() => InitializeCardEditor(card)">Rediger</button>
                                         @if (card.State == 4)
                                         {
-                                            <button class="btn btn-sm btn-outline-success py-0 px-2" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "unsuspend")'>Unsuspend</button>
+                                            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" aria-label="@($"Genoptag kortet {cardTitle}")" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "unsuspend")'>Genoptag</button>
                                         }
                                         else
                                         {
-                                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "suspend")'>Suspend</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" aria-label="@($"Sæt kortet {cardTitle} på pause")" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "suspend")'>Pause</button>
                                         }
-                                        <button class="btn btn-sm btn-outline-warning text-dark py-0 px-2" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "reset")'>Reset</button>
-                                        <button class="btn btn-sm btn-outline-primary py-0 px-2" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "reschedule", _manualRescheduleDays)'>+@(_manualRescheduleDays)d</button>
-                                        <button class="btn btn-sm btn-outline-danger py-0 px-2" @onclick="() => DeleteCardAsync(card.Id)">✕</button>
+                                        <button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" aria-label="@($"Nulstil kortet {cardTitle}")" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "reset")'>Nulstil</button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" aria-label="@($"Udskyd kortet {cardTitle} {_manualRescheduleDays} dage")" @onclick='() => ExecuteCardLifecycleAsync(card.Id, "reschedule", _manualRescheduleDays)'>+@(_manualRescheduleDays)d</button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" aria-label="@($"Slet kortet {cardTitle}")" @onclick="() => DeleteCardAsync(card.Id)"><span aria-hidden="true">✕</span></button>
                                     </div>
                                 </div>
                             </div>
@@ -498,191 +512,228 @@ else if (_overview is not null)
             <div class="col-lg-5">
                 <div class="card border-0 shadow-sm p-4 bg-white sticky-top" style="top: 1rem; border-radius: 8px; border-top: 5px solid #20409A !important;">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold text-dark m-0">
-                            @(_editingCardId.HasValue ? "✏️ Edit Flashcard" : "➕ Create New Flashcard")
-                        </h5>
-                        @if (_editingCardId.HasValue)
-                        {
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => InitializeCardEditor(null)">Clear</button>
-                        }
-                    </div>
-
-                    @foreach (var field in _editingCardFields)
-                    {
-                        <div @key="field.FieldDefinitionId" class="mb-3">
-                            <label class="form-label fw-semibold small mb-1">
-                                <span class="badge me-1" style="background-color: @(field.Side == 1 ? "#20409A" : "#FFEE00"); color: @(field.Side == 1 ? "#FFFFFF" : "#050505");">
-                                    @(field.Side == 1 ? "FRONT" : "BACK")
-                                </span>
-                                @field.FieldName
-                                @if (field.IsRequired)
-                                {
-                                    <span class="text-danger">*</span>
-                                }
-                            </label>
-                            @if (field.FieldType == 2)
+                        <h2 class="h5 fw-bold text-dark m-0">
+                            @if (_editingCardId.HasValue)
                             {
-                                <textarea class="form-control form-control-sm" rows="3" @bind="field.Value"></textarea>
-                            }
-                            else if (field.FieldType == 3 || field.FieldType == 4)
-                            {
-                                var currentSubTab = GetMediaSubTab(field.FieldDefinitionId);
-                                var startSec = GetFieldStartSeconds(field.FieldDefinitionId);
-                                var endSec = GetFieldEndSeconds(field.FieldDefinitionId);
-                                var parsed = MediaUrlParser.Parse(field.Value);
-
-                                <div class="card p-2 border" style="background-color: #F8FAFC;">
-                                    <ul class="nav nav-pills nav-fill mb-2 p-1 bg-white border rounded small">
-                                        <li class="nav-item">
-                                            <button type="button" 
-                                                    class="nav-link py-1 px-2 fw-semibold @(currentSubTab == "url" ? "active" : "")"
-                                                    style="@(currentSubTab == "url" ? "background-color: #20409A; color: #FFFFFF;" : "color: #20409A;")"
-                                                    @onclick='() => SetMediaSubTab(field.FieldDefinitionId, "url")'>
-                                                🌐 Web Link
-                                            </button>
-                                        </li>
-                                        <li class="nav-item">
-                                            <button type="button" 
-                                                    class="nav-link py-1 px-2 fw-semibold @(currentSubTab == "upload" ? "active" : "")"
-                                                    style="@(currentSubTab == "upload" ? "background-color: #20409A; color: #FFFFFF;" : "color: #20409A;")"
-                                                    @onclick='() => SetMediaSubTab(field.FieldDefinitionId, "upload")'>
-                                                ⬆️ Direct Upload
-                                            </button>
-                                        </li>
-                                        <li class="nav-item">
-                                            <button type="button" 
-                                                    class="nav-link py-1 px-2 fw-semibold @(currentSubTab == "server" ? "active" : "")"
-                                                    style="@(currentSubTab == "server" ? "background-color: #20409A; color: #FFFFFF;" : "color: #20409A;")"
-                                                    @onclick='() => SetMediaSubTab(field.FieldDefinitionId, "server")'>
-                                                📁 Server Library
-                                            </button>
-                                        </li>
-                                    </ul>
-
-                                    @if (currentSubTab == "url")
-                                    {
-                                        <div class="mb-2">
-                                            <label class="small text-muted fw-semibold d-block mb-1">Video / Media URL (YouTube, MP4, WebM, GIF, Image)</label>
-                                            <input type="text" class="form-control form-control-sm" 
-                                                   placeholder="https://www.youtube.com/watch?v=... or https://.../video.mp4" 
-                                                   value="@parsed.CleanUrl"
-                                                   @onchange="@(e => {
-                                                       var val = e.Value?.ToString() ?? "";
-                                                       UpdateFieldTimestamps(field, startSec, endSec);
-                                                       field.Value = MediaUrlParser.BuildUrlWithTimestamps(val, startSec, endSec);
-                                                   })" />
-                                        </div>
-                                    }
-                                    else if (currentSubTab == "upload")
-                                    {
-                                        <div class="mb-2">
-                                            <label class="small text-muted fw-semibold d-block mb-1">Upload to Academy Server (Max 100MB &bull; MP4, WebM, GIF, PNG, JPG)</label>
-                                            <InputFile OnChange="@(e => HandleFileUploadAsync(field, e))" 
-                                                       accept=".mp4,.webm,.gif,.png,.jpg,.jpeg" 
-                                                       class="form-control form-control-sm" 
-                                                       disabled="@_isUploadingMedia" />
-                                            @if (_isUploadingMedia)
-                                            {
-                                                <div class="text-primary small mt-1 fw-bold">
-                                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                                    @_mediaUploadMessage
-                                                </div>
-                                            }
-                                            else if (!string.IsNullOrWhiteSpace(_mediaUploadMessage))
-                                            {
-                                                <div class="text-success small mt-1 fw-semibold">
-                                                    @_mediaUploadMessage
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                    else if (currentSubTab == "server")
-                                    {
-                                        <div class="mb-2">
-                                            <label class="small text-muted fw-semibold d-block mb-1">Select from Academy Server Media</label>
-                                            <select class="form-select form-select-sm" 
-                                                    @onchange="@(e => SelectServerMedia(field, e.Value?.ToString() ?? ""))">
-                                                <option value="">-- Choose hosted media file --</option>
-                                                @foreach (var mf in _serverMediaFiles)
-                                                {
-                                                    var isSel = !string.IsNullOrWhiteSpace(field.Value) && field.Value.Contains(mf.RelativeUrl);
-                                                    <option value="@mf.RelativeUrl" selected="@isSel">
-                                                        @mf.FileName (@(mf.SizeBytes >= 1048576 ? $"{mf.SizeBytes / 1048576.0:F1} MB" : $"{mf.SizeBytes / 1024} KB"))
-                                                    </option>
-                                                }
-                                            </select>
-                                        </div>
-                                    }
-
-                                    <!-- Optional Timestamp Looping -->
-                                    <div class="p-2 border rounded bg-white mt-1">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <span class="small fw-bold text-dark">⏱ Loop Timestamp Window</span>
-                                            <span class="small text-muted">(Optional - in seconds)</span>
-                                        </div>
-                                        <div class="row g-2">
-                                            <div class="col-6">
-                                                <div class="input-group input-group-sm">
-                                                    <span class="input-group-text bg-light text-muted">Start</span>
-                                                    <input type="number" min="0" class="form-control" placeholder="0" 
-                                                           value="@startSec" 
-                                                           @onchange="@(e => {
-                                                               int? s = int.TryParse(e.Value?.ToString(), out var parsedS) ? parsedS : null;
-                                                               UpdateFieldTimestamps(field, s, endSec);
-                                                           })" />
-                                                    <span class="input-group-text bg-light text-muted">s</span>
-                                                </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="input-group input-group-sm">
-                                                    <span class="input-group-text bg-light text-muted">End</span>
-                                                    <input type="number" min="0" class="form-control" placeholder="e.g. 15" 
-                                                           value="@endSec" 
-                                                           @onchange="@(e => {
-                                                               int? endVal = int.TryParse(e.Value?.ToString(), out var parsedE) ? parsedE : null;
-                                                               UpdateFieldTimestamps(field, startSec, endVal);
-                                                           })" />
-                                                    <span class="input-group-text bg-light text-muted">s</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    @if (!string.IsNullOrWhiteSpace(field.Value))
-                                    {
-                                        <div class="mt-2 pt-2 border-top">
-                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <span class="small fw-bold text-muted">Assigned Media Reference:</span>
-                                                <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none small"
-                                                        @onclick="@(() => { field.Value = ""; UpdateFieldTimestamps(field, null, null); })">
-                                                    Clear
-                                                </button>
-                                            </div>
-                                            <div class="small font-monospace text-truncate text-secondary mb-2 bg-light p-1 rounded border">
-                                                @field.Value
-                                            </div>
-                                            <div class="technique-live-preview">
-                                                <TechniqueMediaViewer VideoUrl="@field.Value" TechniqueTitle="@field.FieldName" />
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
+                                <span aria-hidden="true">✏️</span><span> Rediger kort</span>
                             }
                             else
                             {
-                                <input type="text" class="form-control form-control-sm" placeholder="" @bind="field.Value" />
+                                <span aria-hidden="true">➕</span><span> Opret nyt kort</span>
                             }
-                        </div>
-                    }
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small mb-1">Tags (comma-separated)</label>
-                        <input type="text" class="form-control form-control-sm" placeholder="guard, retention, dlr" @bind="_editingCardTags" />
+                        </h2>
+                        @if (_editingCardId.HasValue)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => InitializeCardEditor(null)">Ryd</button>
+                        }
                     </div>
 
-                    <button class="btn btn-brand-primary fw-bold w-100" disabled="@_isSaving" @onclick="SaveCardAsync">
-                        💾 @(_editingCardId.HasValue ? "Update Flashcard" : "Add Flashcard to Deck")
-                    </button>
+                    <form @onsubmit="SaveCardAsync" @onsubmit:preventDefault>
+                        @foreach (var field in _editingCardFields)
+                        {
+                            var fieldInputId = $"card-field-{field.FieldDefinitionId}";
+                            <div @key="field.FieldDefinitionId" class="mb-3">
+                                @if (field.FieldType == 3 || field.FieldType == 4)
+                                {
+                                    var currentSubTab = GetMediaSubTab(field.FieldDefinitionId);
+                                    var startSec = GetFieldStartSeconds(field.FieldDefinitionId);
+                                    var endSec = GetFieldEndSeconds(field.FieldDefinitionId);
+                                    var parsed = MediaUrlParser.Parse(field.Value);
+
+                                    <div class="form-label fw-semibold small mb-1">
+                                        <span class="badge me-1" style="background-color: @(field.Side == 1 ? "#20409A" : "#FFEE00"); color: @(field.Side == 1 ? "#FFFFFF" : "#050505");">
+                                            @(field.Side == 1 ? "FORSIDE" : "BAGSIDE")
+                                        </span>
+                                        @field.FieldName
+                                        @if (field.IsRequired)
+                                        {
+                                            <span class="text-danger" aria-hidden="true">*</span>
+                                        }
+                                    </div>
+
+                                    <div class="card p-2 border" style="background-color: #F8FAFC;">
+                                        <ul class="nav nav-pills nav-fill mb-2 p-1 bg-white border rounded small" role="tablist" aria-label="@($"Mediekilde for {field.FieldName}")">
+                                            <li class="nav-item" role="presentation">
+                                                <button type="button"
+                                                        role="tab"
+                                                        aria-selected="@(currentSubTab == "url" ? "true" : "false")"
+                                                        class="nav-link py-1 px-2 fw-semibold @(currentSubTab == "url" ? "active" : "")"
+                                                        style="@(currentSubTab == "url" ? "background-color: #20409A; color: #FFFFFF;" : "color: #20409A;")"
+                                                        @onclick='() => SetMediaSubTab(field.FieldDefinitionId, "url")'>
+                                                    <span aria-hidden="true">🌐</span> Weblink
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button type="button"
+                                                        role="tab"
+                                                        aria-selected="@(currentSubTab == "upload" ? "true" : "false")"
+                                                        class="nav-link py-1 px-2 fw-semibold @(currentSubTab == "upload" ? "active" : "")"
+                                                        style="@(currentSubTab == "upload" ? "background-color: #20409A; color: #FFFFFF;" : "color: #20409A;")"
+                                                        @onclick='() => SetMediaSubTab(field.FieldDefinitionId, "upload")'>
+                                                    <span aria-hidden="true">⬆️</span> Upload
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button type="button"
+                                                        role="tab"
+                                                        aria-selected="@(currentSubTab == "server" ? "true" : "false")"
+                                                        class="nav-link py-1 px-2 fw-semibold @(currentSubTab == "server" ? "active" : "")"
+                                                        style="@(currentSubTab == "server" ? "background-color: #20409A; color: #FFFFFF;" : "color: #20409A;")"
+                                                        @onclick='() => SetMediaSubTab(field.FieldDefinitionId, "server")'>
+                                                    <span aria-hidden="true">📁</span> Mediebibliotek
+                                                </button>
+                                            </li>
+                                        </ul>
+
+                                        @if (currentSubTab == "url")
+                                        {
+                                            <div class="mb-2">
+                                                <label for="@($"{fieldInputId}-url")" class="small text-muted fw-semibold d-block mb-1">Video- / medie-URL (YouTube, MP4, WebM, GIF, billede)</label>
+                                                <input id="@($"{fieldInputId}-url")"
+                                                       type="url"
+                                                       autocapitalize="none"
+                                                       autocorrect="off"
+                                                       spellcheck="false"
+                                                       required="@field.IsRequired"
+                                                       class="form-control form-control-sm"
+                                                       placeholder="https://www.youtube.com/watch?v=... eller https://.../video.mp4"
+                                                       value="@parsed.CleanUrl"
+                                                       @onchange="@(e => {
+                                                           var val = e.Value?.ToString() ?? "";
+                                                           UpdateFieldTimestamps(field, startSec, endSec);
+                                                           field.Value = MediaUrlParser.BuildUrlWithTimestamps(val, startSec, endSec);
+                                                       })" />
+                                            </div>
+                                        }
+                                        else if (currentSubTab == "upload")
+                                        {
+                                            <div class="mb-2">
+                                                <label for="@($"{fieldInputId}-upload")" class="small text-muted fw-semibold d-block mb-1">Upload til akademiserver (maks. 100 MB &bull; MP4, WebM, GIF, PNG, JPG)</label>
+                                                <InputFile id="@($"{fieldInputId}-upload")"
+                                                           OnChange="@(e => HandleFileUploadAsync(field, e))"
+                                                           accept=".mp4,.webm,.gif,.png,.jpg,.jpeg"
+                                                           class="form-control form-control-sm"
+                                                           disabled="@_isUploadingMedia" />
+                                                @if (_isUploadingMedia)
+                                                {
+                                                    <div class="text-primary small mt-1 fw-bold" role="status" aria-live="polite">
+                                                        <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                                                        @_mediaUploadMessage
+                                                    </div>
+                                                }
+                                                else if (!string.IsNullOrWhiteSpace(_mediaUploadMessage))
+                                                {
+                                                    <div class="text-success small mt-1 fw-semibold" role="status" aria-live="polite">
+                                                        @_mediaUploadMessage
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else if (currentSubTab == "server")
+                                        {
+                                            <div class="mb-2">
+                                                <label for="@($"{fieldInputId}-server")" class="small text-muted fw-semibold d-block mb-1">Vælg fra akademiets mediebibliotek</label>
+                                                <select id="@($"{fieldInputId}-server")"
+                                                        class="form-select form-select-sm"
+                                                        @onchange="@(e => SelectServerMedia(field, e.Value?.ToString() ?? ""))">
+                                                    <option value="">-- Vælg hostet mediefil --</option>
+                                                    @foreach (var mf in _serverMediaFiles)
+                                                    {
+                                                        var isSel = !string.IsNullOrWhiteSpace(field.Value) && field.Value.Contains(mf.RelativeUrl);
+                                                        <option @key="mf.RelativeUrl" value="@mf.RelativeUrl" selected="@isSel">
+                                                            @mf.FileName (@(mf.SizeBytes >= 1048576 ? $"{mf.SizeBytes / 1048576.0:F1} MB" : $"{mf.SizeBytes / 1024} KB"))
+                                                        </option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        }
+
+                                        <div class="p-2 border rounded bg-white mt-1">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="small fw-bold text-dark"><span aria-hidden="true">⏱</span> Loop-tidsrum</span>
+                                                <span class="small text-muted">(Valgfrit - i sekunder)</span>
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <div class="input-group input-group-sm">
+                                                        <label for="@($"{fieldInputId}-start")" class="input-group-text bg-light text-muted">Start</label>
+                                                        <input id="@($"{fieldInputId}-start")" type="number" min="0" class="form-control" placeholder="0"
+                                                               value="@startSec"
+                                                               @onchange="@(e => {
+                                                                   int? s = int.TryParse(e.Value?.ToString(), out var parsedS) ? parsedS : null;
+                                                                   UpdateFieldTimestamps(field, s, endSec);
+                                                               })" />
+                                                        <span class="input-group-text bg-light text-muted">s</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="input-group input-group-sm">
+                                                        <label for="@($"{fieldInputId}-end")" class="input-group-text bg-light text-muted">Slut</label>
+                                                        <input id="@($"{fieldInputId}-end")" type="number" min="0" class="form-control" placeholder="f.eks. 15"
+                                                               value="@endSec"
+                                                               @onchange="@(e => {
+                                                                   int? endVal = int.TryParse(e.Value?.ToString(), out var parsedE) ? parsedE : null;
+                                                                   UpdateFieldTimestamps(field, startSec, endVal);
+                                                               })" />
+                                                        <span class="input-group-text bg-light text-muted">s</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(field.Value))
+                                        {
+                                            <div class="mt-2 pt-2 border-top">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="small fw-bold text-muted">Tilknyttet mediereference:</span>
+                                                    <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none small"
+                                                            @onclick="@(() => { field.Value = ""; UpdateFieldTimestamps(field, null, null); })">
+                                                        Ryd
+                                                    </button>
+                                                </div>
+                                                <div class="small font-monospace text-truncate text-secondary mb-2 bg-light p-1 rounded border">
+                                                    @field.Value
+                                                </div>
+                                                <div class="technique-live-preview">
+                                                    <TechniqueMediaViewer VideoUrl="@field.Value" TechniqueTitle="@field.FieldName" />
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <label for="@fieldInputId" class="form-label fw-semibold small mb-1">
+                                        <span class="badge me-1" style="background-color: @(field.Side == 1 ? "#20409A" : "#FFEE00"); color: @(field.Side == 1 ? "#FFFFFF" : "#050505");">
+                                            @(field.Side == 1 ? "FORSIDE" : "BAGSIDE")
+                                        </span>
+                                        @field.FieldName
+                                        @if (field.IsRequired)
+                                        {
+                                            <span class="text-danger" aria-hidden="true">*</span>
+                                        }
+                                    </label>
+                                    @if (field.FieldType == 2)
+                                    {
+                                        <textarea id="@fieldInputId" class="form-control form-control-sm" rows="3" required="@field.IsRequired" @bind="field.Value"></textarea>
+                                    }
+                                    else
+                                    {
+                                        <input id="@fieldInputId" type="text" class="form-control form-control-sm" required="@field.IsRequired" @bind="field.Value" />
+                                    }
+                                }
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label for="card-tags-input" class="form-label fw-semibold small mb-1">Tags (kommasepareret)</label>
+                            <input id="card-tags-input" type="text" class="form-control form-control-sm" placeholder="guard, retention, dlr" @bind="_editingCardTags" />
+                        </div>
+
+                        <button type="submit" class="btn btn-brand-primary fw-bold w-100" disabled="@_isSaving">
+                            <span aria-hidden="true">💾</span> @(_editingCardId.HasValue ? "Opdater kort" : "Tilføj kort til sæt")
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -693,31 +744,33 @@ else if (_overview is not null)
             <div class="col-lg-5">
                 <div class="card border-0 shadow-sm p-3 bg-white" style="border-radius: 8px;">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold text-dark m-0">🧩 Card Field Templates</h5>
-                        <button class="btn btn-sm btn-brand-primary fw-bold" @onclick="StartNewTemplate">➕ New Template</button>
+                        <h2 class="h5 fw-bold text-dark m-0"><span aria-hidden="true">🧩</span> Kortfeltskabeloner</h2>
+                        <button type="button" class="btn btn-sm btn-brand-primary fw-bold" @onclick="StartNewTemplate"><span aria-hidden="true">➕</span> Ny skabelon</button>
                     </div>
                     <div class="d-flex flex-column gap-2">
                         @foreach (var t in _overview.Templates)
                         {
                             var isSelected = _editingTemplateId == t.Id;
-                            <div @key="t.Id"
-                                 class="p-3 border rounded"
-                                 style="cursor: pointer; @(isSelected ? "border: 2px solid #20409A !important; background-color: #EBF0FA;" : "")"
-                                 @onclick="() => SelectTemplateForEdit(t)">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
+                            <button @key="t.Id"
+                                    type="button"
+                                    class="p-3 border rounded text-start w-100 bg-white"
+                                    aria-pressed="@(isSelected ? "true" : "false")"
+                                    style="cursor: pointer; @(isSelected ? "border: 2px solid #20409A !important; background-color: #EBF0FA !important;" : "")"
+                                    @onclick="() => SelectTemplateForEdit(t)">
+                                <span class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="fw-bold text-dark">@t.Name</span>
-                                    <span class="badge bg-dark text-white">@t.Fields.Count fields</span>
-                                </div>
-                                <div class="text-muted small mb-2">@t.Description</div>
-                                <div class="d-flex gap-1 flex-wrap">
+                                    <span class="badge bg-dark text-white">@t.Fields.Count felter</span>
+                                </span>
+                                <span class="d-block text-muted small mb-2">@t.Description</span>
+                                <span class="d-flex gap-1 flex-wrap">
                                     @foreach (var f in t.Fields)
                                     {
                                         <span @key="f.Id" class="badge" style="background-color: @(f.Side == 1 ? "#20409A" : "#FFEE00"); color: @(f.Side == 1 ? "#FFFFFF" : "#050505"); font-size: 0.7rem;">
                                             @(f.Side == 1 ? "F" : "B"): @f.Name
                                         </span>
                                     }
-                                </div>
-                            </div>
+                                </span>
+                            </button>
                         }
                     </div>
                 </div>
@@ -726,201 +779,213 @@ else if (_overview is not null)
             <div class="col-lg-7">
                 <div class="card border-0 shadow-sm p-4 bg-white" style="border-radius: 8px; border-top: 5px solid #20409A !important;">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold text-dark m-0">
-                            @(_editingTemplateId.HasValue ? "✏️ Customize Template" : "➕ Create Custom Template")
-                        </h5>
+                        <h2 class="h5 fw-bold text-dark m-0">
+                            @if (_editingTemplateId.HasValue)
+                            {
+                                <span aria-hidden="true">✏️</span><span> Tilpas skabelon</span>
+                            }
+                            else
+                            {
+                                <span aria-hidden="true">➕</span><span> Opret ny skabelon</span>
+                            }
+                        </h2>
                         @if (_editingTemplateId.HasValue)
                         {
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTemplateAsync(_editingTemplateId.Value)">
-                                🗑️ Delete Template
+                            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTemplateAsync(_editingTemplateId.Value)">
+                                <span aria-hidden="true">🗑️</span> Slet skabelon
                             </button>
                         }
                     </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small">Template Name</label>
-                            <input type="text" class="form-control" @bind="_templateName" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small">Description</label>
-                            <input type="text" class="form-control" @bind="_templateDescription" />
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold small text-dark">Ordered Fields (Front &amp; Back)</span>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => AddTemplateFieldRow(1)">+ Add Front Field</button>
-                            <button class="btn btn-sm btn-outline-dark" @onclick="() => AddTemplateFieldRow(2)">+ Add Back Field</button>
-                        </div>
-                    </div>
-
-                    <div class="d-flex flex-column gap-2 mb-3">
-                        @foreach (var field in _templateFields)
-                        {
-                            <div @key="field.Id" class="row g-2 align-items-center p-2 border rounded bg-light">
-                                <div class="col-md-4">
-                                    <input type="text" class="form-control form-control-sm" placeholder="Field Name" @bind="field.Name" />
-                                </div>
-                                <div class="col-md-3">
-                                    <select class="form-select form-select-sm" @bind="field.Side">
-                                        <option value="1">Front (Prompt)</option>
-                                        <option value="2">Back (Answer)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <select class="form-select form-select-sm" @bind="field.FieldType">
-                                        <option value="1">Short Text</option>
-                                        <option value="2">Multiline Text</option>
-                                        <option value="3">Video URL</option>
-                                        <option value="4">Image / GIF URL</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2 d-flex justify-content-between align-items-center">
-                                    <div class="form-check m-0">
-                                        <input class="form-check-input" type="checkbox" @bind="field.IsRequired" title="Required" />
-                                        <label class="form-check-label small">Req</label>
-                                    </div>
-                                    <button class="btn btn-sm btn-outline-danger py-0 px-2" @onclick="() => RemoveTemplateFieldRow(field.Id)">✕</button>
-                                </div>
+                    <form @onsubmit="SaveTemplateAsync" @onsubmit:preventDefault>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label for="template-name" class="form-label fw-bold small">Skabelonnavn</label>
+                                <input id="template-name" type="text" class="form-control" required @bind="_templateName" />
                             </div>
-                        }
-                    </div>
+                            <div class="col-md-6">
+                                <label for="template-description" class="form-label fw-bold small">Beskrivelse</label>
+                                <input id="template-description" type="text" class="form-control" @bind="_templateDescription" />
+                            </div>
+                        </div>
 
-                    <button class="btn btn-brand-primary fw-bold w-100" disabled="@_isSaving" @onclick="SaveTemplateAsync">
-                        💾 Save Field Template
-                    </button>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold small text-dark">Feltrækkefølge (Forside &amp; Bagside)</span>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => AddTemplateFieldRow(1)">+ Tilføj forsidefelt</button>
+                                <button type="button" class="btn btn-sm btn-outline-dark" @onclick="() => AddTemplateFieldRow(2)">+ Tilføj bagsidefelt</button>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-column gap-2 mb-3">
+                            @foreach (var field in _templateFields)
+                            {
+                                var tfId = $"tpl-field-{field.Id}";
+                                <div @key="field.Id" class="row g-2 align-items-center p-2 border rounded bg-light">
+                                    <div class="col-md-4">
+                                        <label for="@($"{tfId}-name")" class="visually-hidden">Feltnavn</label>
+                                        <input id="@($"{tfId}-name")" type="text" class="form-control form-control-sm" placeholder="Feltnavn" required @bind="field.Name" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="@($"{tfId}-side")" class="visually-hidden">Kortside</label>
+                                        <select id="@($"{tfId}-side")" class="form-select form-select-sm" @bind="field.Side">
+                                            <option value="1">Forside (Spørgsmål)</option>
+                                            <option value="2">Bagside (Svar)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="@($"{tfId}-type")" class="visually-hidden">Felttype</label>
+                                        <select id="@($"{tfId}-type")" class="form-select form-select-sm" @bind="field.FieldType">
+                                            <option value="1">Kort tekst</option>
+                                            <option value="2">Flere linjer</option>
+                                            <option value="3">Video-URL</option>
+                                            <option value="4">Billede- / GIF-URL</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2 d-flex justify-content-between align-items-center">
+                                        <div class="form-check m-0">
+                                            <input id="@($"{tfId}-req")" class="form-check-input" type="checkbox" @bind="field.IsRequired" />
+                                            <label for="@($"{tfId}-req")" class="form-check-label small">Påkr.</label>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" aria-label="@($"Fjern feltet {field.Name}")" @onclick="() => RemoveTemplateFieldRow(field.Id)"><span aria-hidden="true">✕</span></button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <button type="submit" class="btn btn-brand-primary fw-bold w-100" disabled="@_isSaving">
+                            <span aria-hidden="true">💾</span> Gem feltskabelon
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
     }
 }
 
-@if (_showDeckModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.55);">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg" style="border-top: 6px solid #20409A !important;">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold text-dark">
-                        @(_editingDeckId.HasValue ? "⚙️ Deck & SM-2 Algorithm Settings" : "➕ Create New Study Deck")
-                    </h5>
-                    <button type="button" class="btn-close" @onclick="() => _showDeckModal = false"></button>
+<ModalDialog IsOpen="_showDeckModal"
+             OnClose="() => _showDeckModal = false"
+             Title="@(_editingDeckId.HasValue ? "Sæt- og SM-2-algoritmeindstillinger" : "Opret nyt studiesæt")"
+             DialogClass="bjj-dialog-lg"
+             LightDismiss="false">
+    <ChildContent>
+        <form id="deck-settings-form" @onsubmit="SaveDeckModalAsync" @onsubmit:preventDefault>
+            <div class="row g-3 mb-3">
+                <div class="col-md-5">
+                    <label for="deck-name" class="form-label fw-bold small">Sætnavn</label>
+                    <input id="deck-name" type="text" class="form-control" required @bind="_deckName" />
                 </div>
-                <div class="modal-body">
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-5">
-                            <label class="form-label fw-bold small">Deck Name</label>
-                            <input type="text" class="form-control" @bind="_deckName" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold small">Category</label>
-                            <input type="text" class="form-control" @bind="_deckCategory" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small">Card Field Template</label>
-                            <select class="form-select" @bind="_deckTemplateId">
-                                @if (_overview is not null)
-                                {
-                                    @foreach (var t in _overview.Templates)
-                                    {
-                                        <option @key="t.Id" value="@t.Id">@t.Name</option>
-                                    }
-                                }
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold small">Description</label>
-                            <input type="text" class="form-control" @bind="_deckDescription" />
-                        </div>
-                    </div>
-
-                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">🎛️ Custom SM-2 Scheduling Parameters</h6>
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Learning Steps (minutes)</label>
-                            <input type="text" class="form-control form-control-sm" @bind="_optLearningSteps" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Graduating Interval (days)</label>
-                            <input type="number" class="form-control form-control-sm" min="1" @bind="_optGraduatingDays" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Easy Interval (days)</label>
-                            <input type="number" class="form-control form-control-sm" min="1" @bind="_optEasyDays" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Starting Ease Factor</label>
-                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optStartingEase" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Minimum Ease Factor</label>
-                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optMinimumEase" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Easy Bonus Multiplier</label>
-                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optEasyBonus" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Hard Interval Multiplier</label>
-                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optHardMultiplier" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Global Interval Modifier</label>
-                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optIntervalModifier" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Lapse Multiplier (0 = reset)</label>
-                            <input type="number" step="0.05" class="form-control form-control-sm" @bind="_optLapseMultiplier" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Maximum Interval (days)</label>
-                            <input type="number" class="form-control form-control-sm" min="1" @bind="_optMaximumDays" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Daily New Cards Limit</label>
-                            <input type="number" class="form-control form-control-sm" min="0" @bind="_optDailyNewLimit" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Daily Review Limit</label>
-                            <input type="number" class="form-control form-control-sm" min="0" @bind="_optDailyReviewLimit" />
-                        </div>
-                    </div>
+                <div class="col-md-3">
+                    <label for="deck-category" class="form-label fw-bold small">Kategori</label>
+                    <input id="deck-category" type="text" class="form-control" required @bind="_deckCategory" />
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-outline-secondary" @onclick="() => _showDeckModal = false">Cancel</button>
-                    <button class="btn btn-brand-primary fw-bold" disabled="@_isSaving" @onclick="SaveDeckModalAsync">
-                        💾 Save Deck &amp; Schedule
-                    </button>
+                <div class="col-md-4">
+                    <label for="deck-template" class="form-label fw-bold small">Kortfeltskabelon</label>
+                    <select id="deck-template" class="form-select" required @bind="_deckTemplateId">
+                        @if (_overview is not null)
+                        {
+                            @foreach (var t in _overview.Templates)
+                            {
+                                <option @key="t.Id" value="@t.Id">@t.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label for="deck-description" class="form-label fw-bold small">Beskrivelse</label>
+                    <input id="deck-description" type="text" class="form-control" @bind="_deckDescription" />
                 </div>
             </div>
-        </div>
-    </div>
-}
 
-@if (_showJsonModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.55);">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg" style="border-top: 6px solid #FFEE00 !important;">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold text-dark">@_jsonModalTitle</h5>
-                    <button type="button" class="btn-close" @onclick="() => _showJsonModal = false"></button>
+            <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3"><span aria-hidden="true">🎛️</span> Tilpassede SM-2-planlægningsparametre</h3>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="opt-learning-steps" class="form-label small fw-semibold">Indlæringstrin (minutter)</label>
+                    <input id="opt-learning-steps" type="text" class="form-control form-control-sm" required @bind="_optLearningSteps" />
                 </div>
-                <div class="modal-body">
-                    <textarea class="form-control font-monospace small" rows="14" @bind="_jsonPayload" readonly="@(!_isImportMode)"></textarea>
+                <div class="col-md-4">
+                    <label for="opt-graduating-days" class="form-label small fw-semibold">Afslutningsinterval (dage)</label>
+                    <input id="opt-graduating-days" type="number" class="form-control form-control-sm" min="1" required @bind="_optGraduatingDays" />
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-outline-secondary" @onclick="() => _showJsonModal = false">Close</button>
-                    @if (_isImportMode)
-                    {
-                        <button class="btn btn-brand-primary fw-bold" disabled="@_isSaving" @onclick="ConfirmImportJsonAsync">
-                            📥 Import Deck Package
-                        </button>
-                    }
+                <div class="col-md-4">
+                    <label for="opt-easy-days" class="form-label small fw-semibold">Let-interval (dage)</label>
+                    <input id="opt-easy-days" type="number" class="form-control form-control-sm" min="1" required @bind="_optEasyDays" />
+                </div>
+                <div class="col-md-4">
+                    <label for="opt-starting-ease" class="form-label small fw-semibold">Start-lethedsfaktor</label>
+                    <input id="opt-starting-ease" type="number" step="0.05" class="form-control form-control-sm" required @bind="_optStartingEase" />
+                </div>
+                <div class="col-md-4">
+                    <label for="opt-minimum-ease" class="form-label small fw-semibold">Min. lethedsfaktor</label>
+                    <input id="opt-minimum-ease" type="number" step="0.05" class="form-control form-control-sm" required @bind="_optMinimumEase" />
+                </div>
+                <div class="col-md-4">
+                    <label for="opt-easy-bonus" class="form-label small fw-semibold">Let-bonusmultiplikator</label>
+                    <input id="opt-easy-bonus" type="number" step="0.05" class="form-control form-control-sm" required @bind="_optEasyBonus" />
+                </div>
+                <div class="col-md-4">
+                    <label for="opt-hard-multiplier" class="form-label small fw-semibold">Svær-intervalmultiplikator</label>
+                    <input id="opt-hard-multiplier" type="number" step="0.05" class="form-control form-control-sm" required @bind="_optHardMultiplier" />
+                </div>
+                <div class="col-md-4">
+                    <label for="opt-interval-modifier" class="form-label small fw-semibold">Global intervalfaktor</label>
+                    <input id="opt-interval-modifier" type="number" step="0.05" class="form-control form-control-sm" required @bind="_optIntervalModifier" />
+                </div>
+                <div class="col-md-4">
+                    <label for="opt-lapse-multiplier" class="form-label small fw-semibold">Glemselsfaktor (0 = nulstil)</label>
+                    <input id="opt-lapse-multiplier" type="number" step="0.05" class="form-control form-control-sm" required @bind="_optLapseMultiplier" />
+                </div>
+                <div class="col-md-4">
+                    <label for="opt-maximum-days" class="form-label small fw-semibold">Maks. interval (dage)</label>
+                    <input id="opt-maximum-days" type="number" class="form-control form-control-sm" min="1" required @bind="_optMaximumDays" />
+                </div>
+                <div class="col-md-4">
+                    <label for="opt-daily-new-limit" class="form-label small fw-semibold">Daglig grænse for nye kort</label>
+                    <input id="opt-daily-new-limit" type="number" class="form-control form-control-sm" min="0" required @bind="_optDailyNewLimit" />
+                </div>
+                <div class="col-md-4">
+                    <label for="opt-daily-review-limit" class="form-label small fw-semibold">Daglig grænse for gennemgange</label>
+                    <input id="opt-daily-review-limit" type="number" class="form-control form-control-sm" min="0" required @bind="_optDailyReviewLimit" />
                 </div>
             </div>
-        </div>
-    </div>
-}
+        </form>
+    </ChildContent>
+    <FooterContent>
+        <button type="button" class="btn btn-outline-secondary" @onclick="() => _showDeckModal = false">Annuller</button>
+        <button type="submit" form="deck-settings-form" class="btn btn-brand-primary fw-bold" disabled="@_isSaving">
+            <span aria-hidden="true">💾</span> Gem sæt og plan
+        </button>
+    </FooterContent>
+</ModalDialog>
+
+<ModalDialog IsOpen="_showJsonModal"
+             OnClose="() => _showJsonModal = false"
+             Title="@_jsonModalTitle"
+             DialogClass="bjj-dialog-lg"
+             LightDismiss="false">
+    <ChildContent>
+        <form id="json-import-form" @onsubmit="ConfirmImportJsonAsync" @onsubmit:preventDefault>
+            <label for="json-payload-input" class="form-label fw-semibold small">
+                @(_isImportMode ? "Indsæt sætpakke (JSON)" : "Eksporteret sætpakke (JSON)")
+            </label>
+            <textarea id="json-payload-input" class="form-control font-monospace small" rows="14" @bind="_jsonPayload" readonly="@(!_isImportMode)" required="@_isImportMode"></textarea>
+        </form>
+    </ChildContent>
+    <FooterContent>
+        <button type="button" class="btn btn-outline-secondary" @onclick="() => _showJsonModal = false">Luk</button>
+        @if (_isImportMode)
+        {
+            <button type="submit" form="json-import-form" class="btn btn-brand-primary fw-bold" disabled="@_isSaving">
+                <span aria-hidden="true">📥</span> Importer sætpakke
+            </button>
+        }
+    </FooterContent>
+</ModalDialog>
+
+<ConfirmDialog IsOpen="_showResetStarterDecksConfirm"
+               Title="Nulstil startsæt"
+               Message="Vil du gendanne startsættene til standardindstillingerne? Dette genskaber alle 8 teknik-GIF'er og nulstiller intervallerne for startkort. Egne sæt påvirkes ikke."
+               ConfirmText="Nulstil startsæt"
+               CancelText="Annuller"
+               OnConfirm="ConfirmResetStarterDecksAsync"
+               OnCancel="CancelResetStarterDecks" />

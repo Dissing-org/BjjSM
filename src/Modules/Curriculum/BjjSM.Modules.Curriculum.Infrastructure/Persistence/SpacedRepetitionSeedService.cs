@@ -110,7 +110,9 @@ public sealed class SpacedRepetitionSeedService : ISpacedRepetitionSeedService
 
                     card.UpdateContent(card.GetTags(), updatedValues);
                 }
-                else if (string.IsNullOrWhiteSpace(existingImageVal.Value))
+                else if (string.IsNullOrWhiteSpace(existingImageVal.Value)
+                    || (existingImageVal.Value.StartsWith("images/techniques/", StringComparison.OrdinalIgnoreCase)
+                        && existingImageVal.Value.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)))
                 {
                     var updatedValues = card.FieldValues.Select(v =>
                         v.Id == existingImageVal.Id

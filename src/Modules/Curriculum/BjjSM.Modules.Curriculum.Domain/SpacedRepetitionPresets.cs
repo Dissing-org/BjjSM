@@ -20,14 +20,14 @@ public static class SpacedRepetitionPresets
 
     public static class TechniqueGifs
     {
-        public const string DeLaRivaSingleLegX = "images/techniques/dlr-single-leg-x.gif";
-        public const string KneeShieldShoulderCrunch = "images/techniques/knee-shield-shoulder-crunch.gif";
-        public const string OpenGuardGranbyRecovery = "images/techniques/open-guard-granby-recovery.gif";
-        public const string ClosedGuardHipBump = "images/techniques/closed-guard-hip-bump.gif";
-        public const string RearNakedChoke = "images/techniques/rear-naked-choke.gif";
-        public const string ArmbarFromMount = "images/techniques/armbar-from-mount.gif";
-        public const string TriangleChokeGuard = "images/techniques/triangle-choke-guard.gif";
-        public const string InsideHeelHook = "images/techniques/inside-heel-hook.gif";
+        public const string DeLaRivaSingleLegX = "images/techniques/dlr-single-leg-x.mp4";
+        public const string KneeShieldShoulderCrunch = "images/techniques/knee-shield-shoulder-crunch.mp4";
+        public const string OpenGuardGranbyRecovery = "images/techniques/open-guard-granby-recovery.mp4";
+        public const string ClosedGuardHipBump = "images/techniques/closed-guard-hip-bump.mp4";
+        public const string RearNakedChoke = "images/techniques/rear-naked-choke.mp4";
+        public const string ArmbarFromMount = "images/techniques/armbar-from-mount.mp4";
+        public const string TriangleChokeGuard = "images/techniques/triangle-choke-guard.mp4";
+        public const string InsideHeelHook = "images/techniques/inside-heel-hook.mp4";
     }
 
     public static IReadOnlyList<CardTemplate> CreateDefaultTemplates(Guid academyId)

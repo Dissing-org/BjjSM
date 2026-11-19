@@ -1,3 +1,5 @@
+using BjjSM.SharedKernel;
+
 namespace BjjSM.Modules.Curriculum.Domain;
 
 public sealed class TechniqueDrill
@@ -23,11 +25,13 @@ public sealed class TechniqueDrill
         string? referenceUrl,
         int SortOrder)
     {
+        var normalizedUrl = ValidateReferenceUrl(referenceUrl);
+
         Id = id;
         Title = title;
         Category = category;
         CoachingNotes = coachingNotes;
-        ReferenceUrl = referenceUrl;
+        ReferenceUrl = normalizedUrl;
         this.SortOrder = SortOrder;
     }
 
@@ -38,10 +42,28 @@ public sealed class TechniqueDrill
         string? referenceUrl,
         int SortOrder)
     {
+        var normalizedUrl = ValidateReferenceUrl(referenceUrl);
+
         Title = title;
         Category = category;
         CoachingNotes = coachingNotes;
-        ReferenceUrl = referenceUrl;
+        ReferenceUrl = normalizedUrl;
         this.SortOrder = SortOrder;
+    }
+
+    private static string? ValidateReferenceUrl(string? referenceUrl)
+    {
+        if (string.IsNullOrWhiteSpace(referenceUrl))
+        {
+            return null;
+        }
+
+        var trimmed = referenceUrl.Trim();
+        if (!SafeUrlValidator.IsSafeExternalUrl(trimmed))
+        {
+            throw new ArgumentException("Reference URL must be a valid http:// or https:// URL.", nameof(referenceUrl));
+        }
+
+        return trimmed;
     }
 }

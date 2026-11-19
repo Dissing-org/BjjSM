@@ -1,0 +1,41 @@
+<ModalDialog IsOpen="IsOpen"
+             OnClose="HandleCancelAsync"
+             Title="@Title"
+             HeaderClass="@HeaderClass"
+             LightDismiss="false">
+    <ChildContent>
+        <p class="mb-0">@Message</p>
+    </ChildContent>
+    <FooterContent>
+        <button type="button"
+                class="btn btn-outline-secondary"
+                autofocus
+                @onclick="HandleCancelAsync">
+            @CancelText
+        </button>
+        <button type="button"
+                class="btn @ConfirmButtonClass fw-bold"
+                @onclick="HandleConfirmAsync">
+            @ConfirmText
+        </button>
+    </FooterContent>
+</ModalDialog>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public string Title { get; set; } = "Bekræft handling";
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public string ConfirmText { get; set; } = "Bekræft";
+    [Parameter] public string CancelText { get; set; } = "Annuller";
+    [Parameter] public string ConfirmButtonClass { get; set; } = "btn-danger";
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private string HeaderClass =>
+        ConfirmButtonClass.Contains("danger", StringComparison.OrdinalIgnoreCase)
+            ? "bg-danger text-white border-0"
+            : string.Empty;
+
+    private Task HandleConfirmAsync() => OnConfirm.InvokeAsync();
+    private Task HandleCancelAsync() => OnCancel.InvokeAsync();
+}

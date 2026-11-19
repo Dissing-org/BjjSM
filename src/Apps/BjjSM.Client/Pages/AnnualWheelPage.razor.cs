@@ -261,7 +261,7 @@ public partial class AnnualWheelPage : ComponentBase
             if (result.IsSuccess)
             {
                 await LoadWheelAsync();
-                _successMessage = $"{GetMonthName(_selectedMonth)} er nu oprettet i Curriculum Planner!";
+                _successMessage = $"{GetMonthName(_selectedMonth)} er nu oprettet i pensumplanlæggeren!";
             }
             else
             {

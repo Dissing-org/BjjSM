@@ -1,18 +1,20 @@
 @inherits LayoutComponentBase
 <div class="page">
+    <a href="#main-content" class="visually-hidden-focusable skip-link">Spring til hovedindhold</a>
+
     <div class="sidebar">
         <NavMenu />
     </div>
 
-    <main>
-        <div class="top-row px-4 text-muted small">
-            <span class="fw-semibold" style="color: var(--brand-blue);">🥋 BjjSM Martial Arts Portal</span>
-        </div>
+    <main id="main-content" tabindex="-1">
+        <header class="top-row px-4 text-muted small">
+            <span class="fw-semibold" style="color: var(--brand-blue);"><span aria-hidden="true">🥋</span> BjjSM Kampsportsportal</span>
+        </header>
 
-        <article class="content px-4">
+        <div class="content px-4">
             <AppErrorBoundary>
                 @Body
             </AppErrorBoundary>
-        </article>
+        </div>
     </main>
 </div>

@@ -1,5 +1,6 @@
 using BjjSM.Modules.Curriculum.Application;
 using BjjSM.Modules.Curriculum.Domain;
+using BjjSM.SharedKernel;
 using FastEndpoints;
 
 namespace BjjSM.Api.Endpoints.Curriculum;
@@ -35,6 +36,13 @@ public sealed class AddTechniqueEndpoint : Endpoint<AddTechniqueRequest, Monthly
         if (plan is null)
         {
             await Send.NotFoundAsync(ct);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(req.ReferenceUrl) && !SafeUrlValidator.IsSafeExternalUrl(req.ReferenceUrl))
+        {
+            AddError("Reference URL must be a valid http:// or https:// URL.");
+            await Send.ErrorsAsync(cancellation: ct);
             return;
         }
 

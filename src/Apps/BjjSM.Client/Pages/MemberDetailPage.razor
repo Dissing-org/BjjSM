@@ -2,30 +2,31 @@
 @inject IMemberApiClient MemberApi
 @inject NavigationManager Nav
 
-<PageTitle>BjjSM - Member Profile</PageTitle>
+<PageTitle>@(_member is not null ? $"{_member.FirstName} {_member.LastName} | BjjSM" : "Medlemsprofil | BjjSM")</PageTitle>
 
 <div class="mb-3">
     <a href="members" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
-        <span>←</span> Back to Practitioner Roster
+        <span aria-hidden="true">←</span> Tilbage til medlemsoversigt
     </a>
 </div>
 
 @if (_isLoading)
 {
+    <h1 class="visually-hidden">Medlemsprofil</h1>
     <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status" style="color: var(--brand-blue) !important;">
-            <span class="visually-hidden">Loading practitioner details...</span>
+        <div class="spinner-border text-primary" role="progressbar" aria-label="Indlæser medlemsprofil" style="color: var(--brand-blue) !important;">
+            <span class="visually-hidden">Indlæser medlemsoplysninger...</span>
         </div>
-        <p class="text-muted mt-2">Loading member record...</p>
+        <p class="text-muted mt-2">Indlæser medlemsprofil...</p>
     </div>
 }
 else if (_member is null)
 {
     <div class="card border-0 shadow-sm text-center py-5 bg-white">
         <div class="card-body">
-            <h4 class="fw-bold">Practitioner Not Found</h4>
-            <p class="text-muted">The requested practitioner profile does not exist or has been removed.</p>
-            <a href="members" class="btn btn-brand-primary">Return to Roster</a>
+            <h1 class="h4 fw-bold">Medlem ikke fundet</h1>
+            <p class="text-muted">Den ønskede medlemsprofil findes ikke eller er blevet fjernet.</p>
+            <a href="members" class="btn btn-brand-primary">Tilbage til medlemsoversigt</a>
         </div>
     </div>
 }
@@ -36,47 +37,48 @@ else
         <div class="col-lg-5">
             <div class="card border-0 shadow-sm p-4 bg-white" style="border-radius: 8px;">
                 <div class="d-flex align-items-center gap-3 mb-4">
-                    <div class="avatar-circle-lg">
+                    <div class="avatar-circle-lg" aria-hidden="true">
                         @_member.FirstName[0]@_member.LastName[0]
                     </div>
                     <div>
-                        <h3 class="m-0 fw-bold text-dark">@_member.FirstName @_member.LastName</h3>
+                        <h1 class="h3 m-0 fw-bold text-dark">@_member.FirstName @_member.LastName</h1>
                         <span class="badge @(_member.Roles.HasFlag(PractitionerRole.Instructor) ? "bg-dark" : "bg-light text-dark border") mt-1">
-                            @_member.Roles
+                            @FormatRoles(_member.Roles)
                         </span>
                     </div>
                 </div>
 
                 <div class="mb-4">
-                    <label class="text-muted small fw-bold text-uppercase d-block mb-1">Active Rank & Degrees</label>
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Aktiv grad og striber</span>
                     <BjjBeltBadge Rank="@_member.CurrentRank" />
                 </div>
 
                 <div class="d-grid mb-4">
-                    <button class="btn btn-brand-accent fw-bold" @onclick="() => _showPromoteModal = true">
-                        🎓 Award Belt / Stripe Promotion
+                    <button type="button" class="btn btn-brand-accent fw-bold" @onclick="() => _showPromoteModal = true">
+                        <span aria-hidden="true">🎓</span> Tildel bælte- eller stribegraduering
                     </button>
                 </div>
 
-                <div class="border-top pt-3">
+                <dl class="border-top pt-3 mb-0">
                     <div class="d-flex justify-content-between text-muted small mb-2">
-                        <span>Email:</span>
-                        <span class="text-dark fw-medium">@_member.Email</span>
+                        <dt class="fw-normal">E-mail:</dt>
+                        <dd class="text-dark fw-medium mb-0">@_member.Email</dd>
                     </div>
                     <div class="d-flex justify-content-between text-muted small mb-2">
-                        <span>Academy ID:</span>
-                        <span class="text-dark font-monospace small">@_member.AcademyId.ToString()[..8]...</span>
+                        <dt class="fw-normal">Akademi-ID:</dt>
+                        <dd class="text-dark font-monospace small mb-0">@_member.AcademyId.ToString()[..8]...</dd>
                     </div>
                     <div class="d-flex justify-content-between text-muted small">
-                        <span>Ladder:</span>
-                        <span class="text-dark fw-medium">@_member.CurrentRank.Ladder</span>
+                        <dt class="fw-normal">Bælterække:</dt>
+                        <dd class="text-dark fw-medium mb-0">@_member.CurrentRank.Ladder</dd>
                     </div>
-                </div>
+                </dl>
             </div>
         </div>
 
         <!-- Graduation History Timeline -->
         <div class="col-lg-7">
+            <h2 class="visually-hidden">Gradueringsoversigt</h2>
             <GraduationTimeline Graduations="@_member.Graduations" />
         </div>
     </div>
@@ -86,22 +88,6 @@ else
         Member="_member" 
         OnMemberPromoted="HandleMemberPromoted" />
 }
-
-<style>
-    .avatar-circle-lg {
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background-color: #20409A;
-        color: #FFFFFF;
-        font-weight: 800;
-        font-size: 1.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #FFEE00;
-    }
-</style>
 
 @code {
     [Parameter] public Guid Id { get; set; }
@@ -131,5 +117,21 @@ else
     private void HandleMemberPromoted(MemberDto updatedMember)
     {
         _member = updatedMember;
+    }
+
+    private static string FormatRoles(PractitionerRole roles)
+    {
+        var labels = new List<string>();
+        if (roles.HasFlag(PractitionerRole.Instructor))
+        {
+            labels.Add("Instruktør");
+        }
+
+        if (roles.HasFlag(PractitionerRole.Student))
+        {
+            labels.Add("Elev");
+        }
+
+        return labels.Count > 0 ? string.Join(", ", labels) : roles.ToString();
     }
 }

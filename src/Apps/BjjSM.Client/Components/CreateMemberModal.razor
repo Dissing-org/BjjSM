@@ -1,103 +1,127 @@
 @inject IMemberApiClient MemberApi
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
-@if (IsOpen)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header text-white" style="background-color: var(--brand-blue); border-bottom: 2px solid var(--brand-yellow);">
-                    <h5 class="modal-title fw-bold">🥋 Register New Practitioner</h5>
-                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="Close"></button>
+<ModalDialog IsOpen="IsOpen"
+             OnClose="Close"
+             Title="🥋 Opret nyt medlem"
+             LightDismiss="false">
+    <ChildContent>
+        <form id="create-member-form" @onsubmit="HandleSubmitAsync" @onsubmit:preventDefault>
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div id="create-member-error" class="alert alert-danger py-2 small" role="alert">
+                    @_errorMessage
                 </div>
-                <div class="modal-body p-4 bg-white">
-                    @if (!string.IsNullOrEmpty(_errorMessage))
+            }
+
+            <div class="mb-3">
+                <label for="create-member-first-name" class="form-label fw-bold text-dark small">Fornavn</label>
+                <input id="create-member-first-name"
+                       @ref="_firstNameInput"
+                       type="text"
+                       class="form-control"
+                       @bind="_firstName"
+                       placeholder="f.eks. Renzo"
+                       autocomplete="given-name"
+                       required
+                       aria-invalid="@(_firstNameHasError ? "true" : null)"
+                       aria-describedby="@(_firstNameHasError ? "create-member-error" : null)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="create-member-last-name" class="form-label fw-bold text-dark small">Efternavn</label>
+                <input id="create-member-last-name"
+                       @ref="_lastNameInput"
+                       type="text"
+                       class="form-control"
+                       @bind="_lastName"
+                       placeholder="f.eks. Gracie"
+                       autocomplete="family-name"
+                       required
+                       aria-invalid="@(_lastNameHasError ? "true" : null)"
+                       aria-describedby="@(_lastNameHasError ? "create-member-error" : null)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="create-member-email" class="form-label fw-bold text-dark small">E-mailadresse</label>
+                <input id="create-member-email"
+                       @ref="_emailInput"
+                       type="email"
+                       inputmode="email"
+                       class="form-control"
+                       @bind="_email"
+                       placeholder="f.eks. renzo@akademi.dk"
+                       autocomplete="email"
+                       required
+                       aria-invalid="@(_emailHasError ? "true" : null)"
+                       aria-describedby="@(_emailHasError ? "create-member-error" : null)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="create-member-role" class="form-label fw-bold text-dark small">Rolle</label>
+                <select id="create-member-role" class="form-select" @bind="_role">
+                    <option value="@PractitionerRole.Student">Elev</option>
+                    <option value="@PractitionerRole.Instructor">Instruktør</option>
+                    <option value="@(PractitionerRole.Student | PractitionerRole.Instructor)">Instruktør og elev</option>
+                </select>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="create-member-ladder" class="form-label fw-bold text-dark small">Bæltesystem</label>
+                    <select id="create-member-ladder" class="form-select" @bind="_ladder" @bind:after="OnLadderChanged">
+                        <option value="@BeltLadder.Adult">Voksen</option>
+                        <option value="@BeltLadder.Kids">Børn</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label for="create-member-belt" class="form-label fw-bold text-dark small">Bæltegrad</label>
+                    @if (_ladder == BeltLadder.Adult)
                     {
-                        <div class="alert alert-danger py-2 small" role="alert">
-                            @_errorMessage
-                        </div>
-                    }
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">First Name</label>
-                        <input type="text" class="form-control" @bind="_firstName" placeholder="e.g. Renzo" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Last Name</label>
-                        <input type="text" class="form-control" @bind="_lastName" placeholder="e.g. Gracie" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Email Address</label>
-                        <input type="email" class="form-control" @bind="_email" placeholder="e.g. renzo@academy.com" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Role</label>
-                        <select class="form-select" @bind="_role">
-                            <option value="@PractitionerRole.Student">Student</option>
-                            <option value="@PractitionerRole.Instructor">Instructor</option>
-                            <option value="@(PractitionerRole.Student | PractitionerRole.Instructor)">Instructor & Student</option>
+                        <select id="create-member-belt" class="form-select" @bind="_adultBelt">
+                            @foreach (var belt in Enum.GetValues<AdultBelt>())
+                            {
+                                <option value="@belt">@FormatAdultBelt(belt)</option>
+                            }
                         </select>
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label fw-bold text-dark small">Belt Ladder</label>
-                            <select class="form-select" @bind="_ladder" @bind:after="OnLadderChanged">
-                                <option value="@BeltLadder.Adult">Adult Ladder</option>
-                                <option value="@BeltLadder.Kids">Kids Ladder</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-bold text-dark small">Belt Rank</label>
-                            @if (_ladder == BeltLadder.Adult)
+                    }
+                    else
+                    {
+                        <select id="create-member-belt" class="form-select" @bind="_kidsBelt">
+                            @foreach (var belt in Enum.GetValues<KidsBelt>())
                             {
-                                <select class="form-select" @bind="_adultBelt">
-                                    @foreach (var belt in Enum.GetValues<AdultBelt>())
-                                    {
-                                        <option value="@belt">@belt Belt</option>
-                                    }
-                                </select>
+                                <option value="@belt">@belt bælte</option>
                             }
-                            else
-                            {
-                                <select class="form-select" @bind="_kidsBelt">
-                                    @foreach (var belt in Enum.GetValues<KidsBelt>())
-                                    {
-                                        <option value="@belt">@belt Belt</option>
-                                    }
-                                </select>
-                            }
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Stripes / Degrees: @_stripes</label>
-                        <input type="range" class="form-range" min="0" max="4" step="1" @bind="_stripes" />
-                        <div class="d-flex justify-content-between text-muted small px-1">
-                            <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light border-top">
-                    <button type="button" class="btn btn-outline-secondary" @onclick="Close">Cancel</button>
-                    <button type="button" class="btn btn-brand-primary" disabled="@_isSaving" @onclick="SaveAsync">
-                        @if (_isSaving)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                            <span>Registering...</span>
-                        }
-                        else
-                        {
-                            <span>Register Member</span>
-                        }
-                    </button>
+                        </select>
+                    }
                 </div>
             </div>
-        </div>
-    </div>
-}
+
+            <div class="mb-3">
+                <label for="create-member-stripes" class="form-label fw-bold text-dark small">Striber / grader: @_stripes</label>
+                <input id="create-member-stripes" type="range" class="form-range" min="0" max="4" step="1" @bind="_stripes" />
+                <div class="d-flex justify-content-between text-muted small px-1">
+                    <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
+                </div>
+            </div>
+        </form>
+    </ChildContent>
+    <FooterContent>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Close">Annuller</button>
+        <button type="submit" form="create-member-form" class="btn btn-brand-primary" disabled="@_isSaving">
+            @if (_isSaving)
+            {
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <span>Opretter...</span>
+            }
+            else
+            {
+                <span>Opret medlem</span>
+            }
+        </button>
+    </FooterContent>
+</ModalDialog>
 
 @code {
     [Parameter] public bool IsOpen { get; set; }
@@ -113,7 +137,26 @@
     private KidsBelt _kidsBelt = KidsBelt.White;
     private int _stripes = 0;
     private string? _errorMessage;
+    private bool _firstNameHasError;
+    private bool _lastNameHasError;
+    private bool _emailHasError;
     private bool _isSaving;
+    private ElementReference _firstNameInput;
+    private ElementReference _lastNameInput;
+    private ElementReference _emailInput;
+    private IJSObjectReference? _interopModule;
+
+    private static string FormatAdultBelt(AdultBelt belt) => belt switch
+    {
+        AdultBelt.White => "Hvidt bælte",
+        AdultBelt.Blue => "Blåt bælte",
+        AdultBelt.Purple => "Lilla bælte",
+        AdultBelt.Brown => "Brunt bælte",
+        AdultBelt.Black => "Sort bælte",
+        AdultBelt.Coral => "Koralbælte",
+        AdultBelt.Red => "Rødt bælte",
+        _ => $"{belt} bælte"
+    };
 
     private void OnLadderChanged()
     {
@@ -125,16 +168,29 @@
     private async Task Close()
     {
         _errorMessage = null;
+        _firstNameHasError = false;
+        _lastNameHasError = false;
+        _emailHasError = false;
         IsOpen = false;
         await IsOpenChanged.InvokeAsync(false);
     }
 
-    private async Task SaveAsync()
+    private async Task HandleSubmitAsync()
     {
         _errorMessage = null;
-        if (string.IsNullOrWhiteSpace(_firstName) || string.IsNullOrWhiteSpace(_lastName) || string.IsNullOrWhiteSpace(_email))
+        _firstNameHasError = string.IsNullOrWhiteSpace(_firstName);
+        _lastNameHasError = string.IsNullOrWhiteSpace(_lastName);
+        _emailHasError = string.IsNullOrWhiteSpace(_email);
+
+        if (_firstNameHasError || _lastNameHasError || _emailHasError)
         {
-            _errorMessage = "First name, last name, and email are required.";
+            _errorMessage = "Fornavn, efternavn og e-mailadresse er påkrævet.";
+            var firstInvalid = _firstNameHasError
+                ? _firstNameInput
+                : _lastNameHasError
+                    ? _lastNameInput
+                    : _emailInput;
+            await FocusElementAsync(firstInvalid);
             return;
         }
 
@@ -160,7 +216,6 @@
                 return;
             }
 
-            // Reset form
             _firstName = "";
             _lastName = "";
             _email = "";
@@ -172,6 +227,49 @@
         finally
         {
             _isSaving = false;
+        }
+    }
+
+    private async Task FocusElementAsync(ElementReference element)
+    {
+        try
+        {
+            _interopModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/app-interop.js");
+            await _interopModule.InvokeVoidAsync("focusElement", element);
+        }
+        catch (JSException)
+        {
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interopModule is not null)
+        {
+            try
+            {
+                await _interopModule.DisposeAsync();
+            }
+            catch (JSException)
+            {
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            _interopModule = null;
         }
     }
 }

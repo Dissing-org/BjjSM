@@ -79,4 +79,20 @@ public class MediaUrlParserTests
         var built = MediaUrlParser.BuildUrlWithTimestamps("https://youtu.be/test1234567", 12, 18);
         Assert.Equal("https://youtu.be/test1234567#t=12,18", built);
     }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("JAVASCRIPT:alert(document.cookie)")]
+    [InlineData("data:text/html,<script>alert(1)</script>")]
+    [InlineData("vbscript:msgbox(1)")]
+    [InlineData("//evil.example.com/video.mp4")]
+    [InlineData("/media/../secret.mp4")]
+    public void Parse_UnsafeUrls_ShouldReturnNoneProviderAndEmptyEmbedUrl(string unsafeUrl)
+    {
+        var result = MediaUrlParser.Parse(unsafeUrl);
+
+        Assert.Equal(MediaProvider.None, result.Provider);
+        Assert.Equal(string.Empty, result.CleanUrl);
+        Assert.Equal(string.Empty, result.EmbedUrl);
+    }
 }

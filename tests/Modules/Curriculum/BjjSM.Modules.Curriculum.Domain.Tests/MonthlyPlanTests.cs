@@ -143,4 +143,20 @@ public class MonthlyPlanTests
         Assert.True(result.IsSuccess);
         Assert.Empty(plan.Weeks.First(w => w.WeekNumber == 1).Techniques);
     }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("data:text/html,<script>alert(1)</script>")]
+    public void TechniqueDrill_AndUpdateTechnique_ShouldRejectUnsafeReferenceUrl(string unsafeUrl)
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new TechniqueDrill(Guid.NewGuid(), "Armbar", TechniqueCategory.Technique, null, unsafeUrl, 1));
+
+        var plan = MonthlyPlan.Create(_academyId, _programId, 2026, 10, "Passing", _instructorId).Value;
+        var techId = Guid.NewGuid();
+        plan.AddTechnique(1, new TechniqueDrill(techId, "Armbar", TechniqueCategory.Technique, null, null, 1));
+
+        var updateResult = plan.UpdateTechnique(1, techId, "Armbar", TechniqueCategory.Technique, null, unsafeUrl, 1);
+        Assert.True(updateResult.IsFailure);
+    }
 }

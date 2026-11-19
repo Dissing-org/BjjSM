@@ -10,7 +10,7 @@ using Microsoft.JSInterop;
 
 namespace BjjSM.Client.Pages;
 
-public partial class FlowchartEditorPage : ComponentBase
+public partial class FlowchartEditorPage : ComponentBase, IAsyncDisposable
 {
     [Parameter]
     public Guid Id { get; set; }
@@ -20,6 +20,8 @@ public partial class FlowchartEditorPage : ComponentBase
 
     [Inject]
     public IJSRuntime JS { get; set; } = default!;
+
+    private IJSObjectReference? _interopModule;
 
     protected bool _isLoading = true;
     protected string? _errorMessage;
@@ -138,7 +140,7 @@ public partial class FlowchartEditorPage : ComponentBase
                     Id,
                     sourceId,
                     targetId,
-                    "New Transition",
+                    "Ny overgang",
                     6, // Transition
                     null,
                     curveOffset);
@@ -158,6 +160,14 @@ public partial class FlowchartEditorPage : ComponentBase
         }
     }
 
+    protected void HandleNodeKeyDown(FlowchartNodeDto node, KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or " " or "Spacebar")
+        {
+            HandleNodeClick(node);
+        }
+    }
+
     protected void SelectEdge(FlowchartEdgeDto edge)
     {
         if (_hasDragged)
@@ -172,6 +182,14 @@ public partial class FlowchartEditorPage : ComponentBase
         }
     }
 
+    protected void HandleEdgeKeyDown(FlowchartEdgeDto edge, KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or " " or "Spacebar")
+        {
+            SelectEdge(edge);
+        }
+    }
+
     protected void AddPositionNode()
     {
         var centerX = (-_panX + 300) / _zoom;
@@ -180,7 +198,7 @@ public partial class FlowchartEditorPage : ComponentBase
         var newNode = new FlowchartNodeDto(
             Guid.NewGuid(),
             Id,
-            "New Position",
+            "Ny position",
             1, // Top
             null,
             Math.Round(centerX, 0),
@@ -385,11 +403,11 @@ public partial class FlowchartEditorPage : ComponentBase
         {
             _flowchart = res.Value;
             _isDirty = false;
-            _notificationMessage = "✅ Flowchart successfully saved!";
+            _notificationMessage = "Flowchart blev gemt!";
         }
         else
         {
-            _errorMessage = $"Save failed: {res.Error}";
+            _errorMessage = $"Gem fejlede: {res.Error}";
         }
 
         _isSaving = false;
@@ -400,11 +418,10 @@ public partial class FlowchartEditorPage : ComponentBase
         var req = new UpdateFlowchartRequest(_title, _description, _nodes, _edges);
         var json = JsonSerializer.Serialize(req, new JsonSerializerOptions { WriteIndented = true });
         var bytes = Encoding.UTF8.GetBytes(json);
-        var base64 = Convert.ToBase64String(bytes);
 
         var filename = $"{SanitizeFileName(_title)}.json";
-        await JS.InvokeVoidAsync("downloadFileFromBase64", filename, base64, "application/json");
-        _notificationMessage = $"Exported '{filename}'";
+        await DownloadFileAsync(filename, bytes, "application/json");
+        _notificationMessage = $"Eksporterede '{filename}'";
     }
 
     protected async Task ImportJsonAsync(InputFileChangeEventArgs e)
@@ -413,25 +430,61 @@ public partial class FlowchartEditorPage : ComponentBase
         {
             using var stream = e.File.OpenReadStream(1024 * 1024);
             var req = await JsonSerializer.DeserializeAsync<UpdateFlowchartRequest>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (req is not null)
+            if (req is null)
             {
-                _title = req.Title;
-                _description = req.Description;
-                _nodes = req.Nodes.ToList();
-                _edges = req.Edges.ToList();
-                _selectedNode = null;
-                _selectedEdge = null;
-                MarkDirty();
-                _notificationMessage = "Imported flowchart JSON successfully!";
+                _errorMessage = "Kunne ikke læse JSON-fil: tomt indhold.";
+                return;
             }
+
+            if (!ValidateImportedRequest(req, out var validationError))
+            {
+                _errorMessage = validationError;
+                return;
+            }
+
+            _title = req.Title;
+            _description = req.Description;
+            _nodes = req.Nodes.ToList();
+            _edges = req.Edges.ToList();
+            _selectedNode = null;
+            _selectedEdge = null;
+            _errorMessage = null;
+            MarkDirty();
+            _notificationMessage = "Flowchart-JSON blev importeret!";
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Failed to parse JSON file: {ex.Message}";
+            _errorMessage = $"Kunne ikke læse JSON-fil: {ex.Message}";
         }
     }
 
-    protected async Task ExportSvgAsync()
+    protected static bool ValidateImportedRequest(UpdateFlowchartRequest req, out string? error)
+    {
+        if (req.Nodes is null || req.Edges is null)
+        {
+            error = "Ugyldig flowchart-JSON: både positioner og pile er påkrævet.";
+            return false;
+        }
+
+        foreach (var node in req.Nodes)
+        {
+            if (!double.IsFinite(node.X)
+                || !double.IsFinite(node.Y)
+                || !double.IsFinite(node.Width)
+                || !double.IsFinite(node.Height)
+                || node.Width <= 0
+                || node.Height <= 0)
+            {
+                error = "Ugyldig flowchart-JSON: positioners koordinater og dimensioner skal være gyldige tal med positiv bredde og højde.";
+                return false;
+            }
+        }
+
+        error = null;
+        return true;
+    }
+
+    protected string BuildSvgMarkup()
     {
         var svgBuilder = new StringBuilder();
         svgBuilder.AppendLine("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1200\" height=\"800\" viewBox=\"0 0 1200 800\" style=\"background-color: #F8FAFC; font-family: system-ui, -apple-system, sans-serif;\">");
@@ -455,8 +508,8 @@ public partial class FlowchartEditorPage : ComponentBase
             svgBuilder.AppendLine($"  <path d=\"{pathData}\" fill=\"none\" stroke=\"{stroke}\" stroke-width=\"2.5\" marker-end=\"{marker}\" />");
             var textLen = Math.Max(edge.Label.Length * 7.5, 50);
             var pillWidth = textLen + 16;
-            svgBuilder.AppendLine($"  <rect x=\"{labelX - pillWidth / 2}\" y=\"{labelY - 12}\" width=\"{pillWidth}\" height=\"24\" rx=\"12\" fill=\"#FFFFFF\" stroke=\"{stroke}\" stroke-width=\"1.5\" />");
-            svgBuilder.AppendLine($"  <text x=\"{labelX}\" y=\"{labelY + 4}\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"bold\" fill=\"#050505\">{System.Net.WebUtility.HtmlEncode(edge.Label)}</text>");
+            svgBuilder.AppendLine(FormattableString.Invariant($"  <rect x=\"{labelX - pillWidth / 2}\" y=\"{labelY - 12}\" width=\"{pillWidth}\" height=\"24\" rx=\"12\" fill=\"#FFFFFF\" stroke=\"{stroke}\" stroke-width=\"1.5\" />"));
+            svgBuilder.AppendLine(FormattableString.Invariant($"  <text x=\"{labelX}\" y=\"{labelY + 4}\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"bold\" fill=\"#050505\">{System.Net.WebUtility.HtmlEncode(edge.Label)}</text>"));
         }
 
         // Nodes
@@ -467,9 +520,9 @@ public partial class FlowchartEditorPage : ComponentBase
             var headerTextColor = isSub ? "#050505" : "#FFFFFF";
             var borderColor = isSub ? "#FFD700" : "#20409A";
 
-            svgBuilder.AppendLine($"  <g transform=\"translate({node.X}, {node.Y})\">");
-            svgBuilder.AppendLine($"    <rect width=\"{node.Width}\" height=\"{node.Height}\" rx=\"8\" fill=\"#FFFFFF\" stroke=\"{borderColor}\" stroke-width=\"2\" />");
-            svgBuilder.AppendLine($"    <path d=\"M 0 8 Q 0 0 8 0 L {node.Width - 8} 0 Q {node.Width} 0 {node.Width} 8 L {node.Width} 26 L 0 26 Z\" fill=\"{headerColor}\" />");
+            svgBuilder.AppendLine(FormattableString.Invariant($"  <g transform=\"translate({node.X}, {node.Y})\">"));
+            svgBuilder.AppendLine(FormattableString.Invariant($"    <rect width=\"{node.Width}\" height=\"{node.Height}\" rx=\"8\" fill=\"#FFFFFF\" stroke=\"{borderColor}\" stroke-width=\"2\" />"));
+            svgBuilder.AppendLine(FormattableString.Invariant($"    <path d=\"M 0 8 Q 0 0 8 0 L {node.Width - 8} 0 Q {node.Width} 0 {node.Width} 8 L {node.Width} 26 L 0 26 Z\" fill=\"{headerColor}\" />"));
             svgBuilder.AppendLine($"    <text x=\"8\" y=\"18\" font-size=\"10\" font-weight=\"bold\" fill=\"{headerTextColor}\">{GetCategoryDisplayName(node.Category).ToUpperInvariant()}</text>");
             svgBuilder.AppendLine($"    <text x=\"10\" y=\"48\" font-size=\"13\" font-weight=\"bold\" fill=\"#050505\">{System.Net.WebUtility.HtmlEncode(node.Title)}</text>");
             if (!string.IsNullOrWhiteSpace(node.Notes))
@@ -480,12 +533,41 @@ public partial class FlowchartEditorPage : ComponentBase
         }
 
         svgBuilder.AppendLine("</svg>");
+        return svgBuilder.ToString();
+    }
 
-        var bytes = Encoding.UTF8.GetBytes(svgBuilder.ToString());
-        var base64 = Convert.ToBase64String(bytes);
+    protected async Task ExportSvgAsync()
+    {
+        var bytes = Encoding.UTF8.GetBytes(BuildSvgMarkup());
         var filename = $"{SanitizeFileName(_title)}.svg";
-        await JS.InvokeVoidAsync("downloadFileFromBase64", filename, base64, "image/svg+xml");
-        _notificationMessage = $"Downloaded '{filename}'";
+        await DownloadFileAsync(filename, bytes, "image/svg+xml");
+        _notificationMessage = $"Downloadede '{filename}'";
+    }
+
+    private async Task DownloadFileAsync(string fileName, byte[] bytes, string contentType)
+    {
+        using var stream = new MemoryStream(bytes);
+        using var streamRef = new DotNetStreamReference(stream);
+        _interopModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/app-interop.js");
+        await _interopModule.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef, contentType);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interopModule is not null)
+        {
+            try
+            {
+                await _interopModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            _interopModule = null;
+        }
     }
 
     // Geometry Calculation
@@ -563,8 +645,8 @@ public partial class FlowchartEditorPage : ComponentBase
 
     protected static string GetCategoryDisplayName(int category) => category switch
     {
-        1 => "Top Control",
-        2 => "Bottom Guard",
+        1 => "Topkontrol",
+        2 => "Bundguard",
         3 => "Neutral",
         4 => "Submission",
         _ => "Position"

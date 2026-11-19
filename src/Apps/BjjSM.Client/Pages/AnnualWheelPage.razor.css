@@ -1,0 +1,41 @@
+.month-slot-card {
+    user-select: none;
+    cursor: pointer;
+}
+
+.month-slot-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.theme-card {
+    user-select: none;
+    cursor: grab;
+}
+
+.theme-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(32, 64, 154, 0.12) !important;
+}
+
+.theme-card:active {
+    cursor: grabbing;
+}
+
+.grip-icon {
+    cursor: grab;
+}
+
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .month-slot-card:hover,
+    .theme-card:hover {
+        transform: none;
+    }
+}

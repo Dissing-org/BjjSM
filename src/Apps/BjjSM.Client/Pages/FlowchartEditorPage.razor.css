@@ -1,0 +1,14 @@
+.flowchart-editor-container {
+    height: calc(100dvh - 4rem);
+    min-height: 28rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 640.98px) {
+    .flowchart-editor-container {
+        height: calc(100dvh - 8rem);
+        min-height: 28rem;
+    }
+}

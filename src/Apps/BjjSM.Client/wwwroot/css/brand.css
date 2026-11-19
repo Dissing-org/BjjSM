@@ -1,4 +1,6 @@
 :root {
+    color-scheme: light;
+
     /* =========================================================
        BjjSM Brand Design System
        Emblem: Japanese Mon / Crest, Tessen Fan & Katana
@@ -15,7 +17,7 @@
     --brand-yellow: #FFEE00;
     --brand-yellow-hover: #E6D600;
     --brand-yellow-gold: #FFD700;
-    --brand-yellow-text: #997A00; /* WCAG AA accessible on white */
+    --brand-yellow-text: #735C00; /* WCAG AA >= 5.8:1 on white */
 
     /* 3. Base Neutrals (Canvas & Linework) */
     --brand-black: #050505;
@@ -74,11 +76,17 @@ html, body {
     background-color: var(--brand-yellow-hover);
 }
 
+.text-danger-on-dark {
+    color: #FCA5A5;
+}
+
 /* =========================================================
    WoW Classic Talent Tree Styling
    ========================================================= */
 
 .wow-tree-canvas {
+    --bs-secondary-color: #CBD5E1;
+    --bs-body-color: #F8FAFC;
     background: radial-gradient(circle at center, #141b2d 0%, #080c16 100%);
     border: 3px solid #997A00;
     border-radius: 12px;
@@ -151,6 +159,7 @@ html, body {
 
 .wow-connector-line::after {
     content: "▼";
+    content: "▼" / "";
     position: absolute;
     bottom: -7px;
     left: 50%;
@@ -210,9 +219,15 @@ html, body {
 }
 
 .wow-talent-slot.locked {
-    filter: grayscale(85%) opacity(0.45);
     cursor: not-allowed;
-    border-color: #1E293B;
+    border-color: #334155;
+    background: #090D16;
+    box-shadow: none;
+}
+
+.wow-talent-slot.locked .wow-talent-icon {
+    filter: grayscale(85%);
+    opacity: 0.55;
 }
 
 .wow-talent-icon {
@@ -393,8 +408,8 @@ html, body {
     position: absolute;
     top: -6px;
     right: -6px;
-    width: 22px;
-    height: 22px;
+    min-inline-size: 24px;
+    min-block-size: 24px;
     background: #050505;
     border: 1px solid #FFEE00;
     color: #FFEE00;
@@ -407,7 +422,7 @@ html, body {
     opacity: 0.75;
     transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
     z-index: 10;
-    padding: 0;
+    padding: 2px;
 }
 
 .wow-talent-edit-btn:hover {
@@ -425,8 +440,8 @@ html, body {
     position: absolute;
     top: -6px;
     left: -6px;
-    width: 22px;
-    height: 22px;
+    min-inline-size: 24px;
+    min-block-size: 24px;
     background: #050505;
     border: 1px solid #FFEE00;
     color: #FFEE00;
@@ -439,7 +454,7 @@ html, body {
     opacity: 0.85;
     transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease, color 0.15s ease;
     z-index: 10;
-    padding-left: 2px; /* optical center for triangle play icon */
+    padding: 2px;
 }
 
 .wow-talent-video-btn:hover {
@@ -464,8 +479,8 @@ html, body {
 }
 
 .wow-btn-mini {
-    width: 26px;
-    height: 22px;
+    min-inline-size: 26px;
+    min-block-size: 24px;
     padding: 0;
     font-size: 0.85rem;
     font-weight: 700;
@@ -568,8 +583,8 @@ html, body {
     border: 3px solid #FFEE00;
     border-radius: 10px;
     padding: 12px 20px;
-    min-width: 380px;
-    max-width: 90vw;
+    width: min(26rem, calc(100dvw - 2rem));
+    min-width: 0;
     box-shadow: 0 10px 35px rgba(0, 0, 0, 0.95), 0 0 25px rgba(255, 238, 0, 0.45);
     animation: wowSlideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     cursor: pointer;
@@ -671,14 +686,22 @@ html, body {
 }
 
 .trophy-card.locked {
-    opacity: 0.6;
-    border-color: #1E293B;
-    filter: grayscale(80%);
+    border-color: #334155;
+    background: #090D16;
+}
+
+.trophy-card.locked .fs-3 {
+    filter: grayscale(85%);
+    opacity: 0.65;
 }
 
 .trophy-card.locked:hover {
-    opacity: 0.85;
+    border-color: #475569;
+}
+
+.trophy-card.locked:hover .fs-3 {
     filter: grayscale(40%);
+    opacity: 0.85;
 }
 
 .trophy-card-header {
@@ -732,4 +755,217 @@ html, body {
 .trophy-card.locked .trophy-card-footer {
     color: #94A3B8;
 }
+
+/* =========================================================
+   Native <dialog> Top-Layer Modal System
+   ========================================================= */
+
+dialog.bjj-dialog {
+    padding: 0;
+    border: none;
+    border-radius: 0.625rem;
+    background-color: var(--brand-white);
+    color: var(--brand-black);
+    width: min(32rem, calc(100dvw - 2rem));
+    max-width: calc(100dvw - 2rem);
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(5, 5, 5, 0.45);
+}
+
+dialog.bjj-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+dialog.bjj-dialog:modal {
+    overscroll-behavior: contain;
+}
+
+dialog.bjj-dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+    background-color: rgba(5, 5, 5, 0.65);
+}
+
+dialog.bjj-dialog.bjj-dialog-lg {
+    width: min(50rem, calc(100dvw - 2rem));
+}
+
+dialog.bjj-dialog.bjj-dialog-xl {
+    width: min(70rem, calc(100dvw - 2rem));
+}
+
+.bjj-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background-color: var(--brand-blue);
+    color: var(--brand-white);
+    border-bottom: 2px solid var(--brand-yellow);
+    flex-shrink: 0;
+}
+
+.bjj-dialog-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.bjj-dialog-body {
+    padding: 1.25rem 1.5rem;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    background-color: var(--brand-white);
+}
+
+.bjj-dialog-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.875rem 1.25rem;
+    background-color: var(--brand-surface);
+    border-top: 1px solid var(--brand-border);
+    flex-shrink: 0;
+}
+
+dialog.bjj-dialog.bjj-dialog-dark {
+    --bs-secondary-color: #CBD5E1;
+    --bs-body-color: #F8FAFC;
+    background-color: var(--brand-black-muted);
+    color: var(--brand-white);
+    border: 2px solid var(--brand-yellow-text);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+}
+
+dialog.bjj-dialog.bjj-dialog-dark::backdrop {
+    background-color: rgba(0, 0, 0, 0.78);
+}
+
+dialog.bjj-dialog.bjj-dialog-dark .bjj-dialog-header {
+    background-color: #070A12;
+    color: var(--brand-yellow);
+    border-bottom: 1px solid #334155;
+}
+
+dialog.bjj-dialog.bjj-dialog-dark .bjj-dialog-body {
+    background-color: var(--brand-black-muted);
+    color: var(--brand-white);
+}
+
+dialog.bjj-dialog.bjj-dialog-dark .bjj-dialog-footer {
+    background-color: #070A12;
+    border-top: 1px solid #334155;
+}
+
+dialog.bjj-dialog.bjj-dialog-lightbox {
+    width: min(48rem, calc(100dvw - 2rem));
+    background-color: var(--brand-black);
+    border: 3px solid var(--brand-yellow);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.75);
+}
+
+dialog.bjj-dialog.bjj-dialog-lightbox::backdrop {
+    background-color: rgba(5, 5, 5, 0.85);
+}
+
+dialog.bjj-dialog.bjj-dialog-lightbox .bjj-dialog-body {
+    background-color: var(--brand-black);
+    padding: 0.5rem;
+    text-align: center;
+}
+
+.wow-tree-canvas :focus-visible,
+.bjj-dialog-dark :focus-visible {
+    outline-color: var(--brand-yellow);
+}
+
+/* =========================================================
+   Accessibility: Forced Colors, Reduced Motion, Touch Targets
+   ========================================================= */
+
+@media (forced-colors: active) {
+    :focus-visible {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+
+    .nav-item a.active {
+        border-inline-start: 4px solid Highlight;
+    }
+
+    .wow-talent-slot.unlocked {
+        border: 2px solid ButtonText;
+    }
+
+    .wow-talent-slot.has-points {
+        border: 2px solid Highlight;
+    }
+
+    .wow-talent-slot.maxed {
+        border: 3px solid Highlight;
+    }
+
+    .wow-talent-slot.locked {
+        border: 2px dashed GrayText;
+    }
+
+    .progress {
+        border: 1px solid CanvasText;
+    }
+
+    .progress-bar {
+        background-color: Highlight;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wow-achievement-toast {
+        animation: none;
+    }
+
+    .btn-brand-primary,
+    .btn-brand-accent,
+    .wow-talent-slot,
+    .wow-talent-edit-btn,
+    .wow-talent-video-btn,
+    .wow-btn-mini,
+    .trophy-card {
+        transition: none;
+    }
+
+    .wow-talent-slot:hover,
+    .wow-talent-slot.empty-slot:hover,
+    .wow-talent-edit-btn:hover,
+    .wow-talent-video-btn:hover {
+        transform: none;
+    }
+}
+
+@media (pointer: coarse) {
+    .wow-talent-edit-btn,
+    .wow-talent-video-btn,
+    .wow-btn-mini {
+        min-inline-size: 44px;
+        min-block-size: 44px;
+    }
+
+    .form-control,
+    .form-select {
+        min-block-size: 44px;
+    }
+
+    input,
+    select,
+    textarea {
+        font-size: max(1rem, 1em);
+    }
+}
+
+
 

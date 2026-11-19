@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BjjSM.Client.Models;
+using BjjSM.SharedKernel;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -424,6 +425,12 @@ public partial class TalentsPage : ComponentBase
             return;
         }
 
+        if (!string.IsNullOrWhiteSpace(_formModel.VideoUrl) && !SafeUrlValidator.IsSafeExternalUrl(_formModel.VideoUrl))
+        {
+            _formError = "Videolink skal være en gyldig http:// eller https:// URL.";
+            return;
+        }
+
         var existingRank = 0;
         if (!_formModel.IsNew)
         {
@@ -479,11 +486,21 @@ public partial class TalentsPage : ComponentBase
         await SaveToLocalStorageAsync();
     }
 
-    private async Task ResetToDefaultsAsync()
-    {
-        var confirmed = await JS.InvokeAsync<bool>("confirm", "Er du sikker på, at du vil nulstille til standard BJJ Basics træet? Dette vil fjerne eventuelle brugerdefinerede talenter.");
-        if (!confirmed) return;
+    private bool _showResetDefaultsConfirm;
 
+    private void RequestResetToDefaults()
+    {
+        _showResetDefaultsConfirm = true;
+    }
+
+    private void CancelResetToDefaults()
+    {
+        _showResetDefaultsConfirm = false;
+    }
+
+    private async Task ConfirmResetToDefaultsAsync()
+    {
+        _showResetDefaultsConfirm = false;
         _talents = GetDefaultTalents();
         await SaveToLocalStorageAsync();
     }

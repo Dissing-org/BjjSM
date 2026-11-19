@@ -137,6 +137,9 @@ public sealed class MonthlyPlan
         if (string.IsNullOrWhiteSpace(title))
             return Result.Failure("Technique title cannot be empty.");
 
+        if (!string.IsNullOrWhiteSpace(referenceUrl) && !SafeUrlValidator.IsSafeExternalUrl(referenceUrl))
+            return Result.Failure("Reference URL must be a valid http:// or https:// URL.");
+
         var updated = week.UpdateTechnique(techniqueId, title.Trim(), category, coachingNotes?.Trim(), referenceUrl?.Trim(), sortOrder);
         if (!updated)
             return Result.Failure($"Technique with ID '{techniqueId}' does not exist in Week {weekNumber}.");

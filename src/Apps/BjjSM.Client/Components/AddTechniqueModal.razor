@@ -1,71 +1,85 @@
 @inject ICurriculumApiClient CurriculumApi
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
-@if (IsOpen)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(5, 5, 5, 0.65);" aria-modal="true" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header text-white" style="background-color: var(--brand-blue); border-bottom: 2px solid var(--brand-yellow);">
-                    <h5 class="modal-title fw-bold">🥋 Add Week @WeekNumber Drill / Technique</h5>
-                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="Close"></button>
+<ModalDialog IsOpen="IsOpen"
+             OnClose="Close"
+             Title="@($"🥋 Tilføj uge {WeekNumber} øvelse / teknik")"
+             LightDismiss="false">
+    <ChildContent>
+        <form id="add-technique-form" @onsubmit="HandleSubmitAsync" @onsubmit:preventDefault>
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div id="add-technique-error" class="alert alert-danger py-2 small" role="alert">
+                    @_errorMessage
                 </div>
-                <div class="modal-body p-4 bg-white">
-                    @if (!string.IsNullOrEmpty(_errorMessage))
-                    {
-                        <div class="alert alert-danger py-2 small" role="alert">
-                            @_errorMessage
-                        </div>
-                    }
+            }
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Technique / Drill Title</label>
-                        <input type="text" class="form-control" @bind="_title" placeholder="e.g. Scissor Sweep to Mount" />
-                    </div>
+            <div class="mb-3">
+                <label for="add-technique-title" class="form-label fw-bold text-dark small">Titel på teknik / øvelse</label>
+                <input id="add-technique-title"
+                       @ref="_titleInput"
+                       type="text"
+                       class="form-control"
+                       @bind="_title"
+                       placeholder="f.eks. Scissor Sweep til Mount"
+                       required
+                       aria-invalid="@(_titleHasError ? "true" : null)"
+                       aria-describedby="@(_titleHasError ? "add-technique-error" : null)" />
+            </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label fw-bold text-dark small">Category</label>
-                            <select class="form-select" @bind="_category">
-                                <option value="@TechniqueCategory.Technique">🥋 Technique</option>
-                                <option value="@TechniqueCategory.SituationalDrill">⚡ Situational Drill</option>
-                                <option value="@TechniqueCategory.Warmup">🔥 Warmup</option>
-                                <option value="@TechniqueCategory.CoolDown">🧘 CoolDown</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-bold text-dark small">Sort Order</label>
-                            <input type="number" class="form-control" @bind="_sortOrder" min="1" max="20" />
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Reference Video URL (Optional)</label>
-                        <input type="url" class="form-control" @bind="_referenceUrl" placeholder="https://youtube.com/watch?v=..." />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Coaching Notes / Invariants</label>
-                        <textarea class="form-control" rows="3" @bind="_coachingNotes" placeholder="e.g. Ensure sleeve grip is pinned to hip, chop low leg swiftly..."></textarea>
-                    </div>
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="add-technique-category" class="form-label fw-bold text-dark small">Kategori</label>
+                    <select id="add-technique-category" class="form-select" @bind="_category">
+                        <option value="@TechniqueCategory.Technique">🥋 Teknik</option>
+                        <option value="@TechniqueCategory.SituationalDrill">⚡ Situationsøvelse</option>
+                        <option value="@TechniqueCategory.Warmup">🔥 Opvarmning</option>
+                        <option value="@TechniqueCategory.CoolDown">🧘 Nedkøling</option>
+                    </select>
                 </div>
-                <div class="modal-footer bg-light border-top">
-                    <button type="button" class="btn btn-outline-secondary" @onclick="Close">Cancel</button>
-                    <button type="button" class="btn btn-brand-primary" disabled="@_isSaving" @onclick="SaveAsync">
-                        @if (_isSaving)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                            <span>Adding...</span>
-                        }
-                        else
-                        {
-                            <span>Add Technique</span>
-                        }
-                    </button>
+                <div class="col-6">
+                    <label for="add-technique-sort" class="form-label fw-bold text-dark small">Rækkefølge</label>
+                    <input id="add-technique-sort" type="number" class="form-control" @bind="_sortOrder" min="1" max="20" required />
                 </div>
             </div>
-        </div>
-    </div>
-}
+
+            <div class="mb-3">
+                <label for="add-technique-url" class="form-label fw-bold text-dark small">Referencevideo-URL (valgfri)</label>
+                <input id="add-technique-url"
+                       @ref="_referenceUrlInput"
+                       type="url"
+                       autocapitalize="none"
+                       autocorrect="off"
+                       spellcheck="false"
+                       class="form-control"
+                       @bind="_referenceUrl"
+                       placeholder="https://youtube.com/watch?v=..."
+                       aria-invalid="@(_urlHasError ? "true" : null)"
+                       aria-describedby="@(_urlHasError ? "add-technique-error" : null)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="add-technique-notes" class="form-label fw-bold text-dark small">Trænernoter / fokuspunkter</label>
+                <textarea id="add-technique-notes" class="form-control" rows="3" @bind="_coachingNotes" placeholder="f.eks. Hold ærmegrebet fast mod hoften, træk det nederste ben hurtigt..."></textarea>
+            </div>
+        </form>
+    </ChildContent>
+    <FooterContent>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Close">Annuller</button>
+        <button type="submit" form="add-technique-form" class="btn btn-brand-primary" disabled="@_isSaving">
+            @if (_isSaving)
+            {
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <span>Tilføjer...</span>
+            }
+            else
+            {
+                <span>Tilføj teknik</span>
+            }
+        </button>
+    </FooterContent>
+</ModalDialog>
 
 @code {
     [Parameter] public bool IsOpen { get; set; }
@@ -80,24 +94,44 @@
     private string? _referenceUrl;
     private int _sortOrder = 1;
     private string? _errorMessage;
+    private bool _titleHasError;
+    private bool _urlHasError;
     private bool _isSaving;
+    private ElementReference _titleInput;
+    private ElementReference _referenceUrlInput;
+    private IJSObjectReference? _interopModule;
 
     private async Task Close()
     {
         _errorMessage = null;
+        _titleHasError = false;
+        _urlHasError = false;
         IsOpen = false;
         await IsOpenChanged.InvokeAsync(false);
     }
 
-    private async Task SaveAsync()
+    private async Task HandleSubmitAsync()
     {
+        _errorMessage = null;
+        _titleHasError = false;
+        _urlHasError = false;
+
         if (string.IsNullOrWhiteSpace(_title))
         {
-            _errorMessage = "Technique title is required.";
+            _titleHasError = true;
+            _errorMessage = "Titel på teknik er påkrævet.";
+            await FocusElementAsync(_titleInput);
             return;
         }
 
-        _errorMessage = null;
+        if (!string.IsNullOrWhiteSpace(_referenceUrl) && !SafeUrlValidator.IsSafeExternalUrl(_referenceUrl))
+        {
+            _urlHasError = true;
+            _errorMessage = "Reference-URL skal være en gyldig http:// eller https:// adresse.";
+            await FocusElementAsync(_referenceUrlInput);
+            return;
+        }
+
         _isSaving = true;
 
         try
@@ -128,6 +162,49 @@
         finally
         {
             _isSaving = false;
+        }
+    }
+
+    private async Task FocusElementAsync(ElementReference element)
+    {
+        try
+        {
+            _interopModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/app-interop.js");
+            await _interopModule.InvokeVoidAsync("focusElement", element);
+        }
+        catch (JSException)
+        {
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interopModule is not null)
+        {
+            try
+            {
+                await _interopModule.DisposeAsync();
+            }
+            catch (JSException)
+            {
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            _interopModule = null;
         }
     }
 }

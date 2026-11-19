@@ -1,0 +1,18 @@
+.avatar-circle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background-color: #20409A;
+    color: #FFFFFF;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #FFEE00;
+}
+
+.hover-blue:hover {
+    color: #20409A !important;
+    text-decoration: underline !important;
+}

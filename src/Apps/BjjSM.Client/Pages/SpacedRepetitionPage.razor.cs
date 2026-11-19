@@ -3,10 +3,11 @@ using BjjSM.Client.Services;
 using BjjSM.Modules.Curriculum.Domain;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 
 namespace BjjSM.Client.Pages;
 
-public partial class SpacedRepetitionPage : ComponentBase
+public partial class SpacedRepetitionPage : ComponentBase, IAsyncDisposable
 {
     [Inject]
     private ISpacedRepetitionApiClient Api { get; set; } = default!;
@@ -15,7 +16,20 @@ public partial class SpacedRepetitionPage : ComponentBase
     private ICurriculumMediaApiClient MediaApi { get; set; } = default!;
 
     [Inject]
-    private Microsoft.JSInterop.IJSRuntime JsRuntime { get; set; } = default!;
+    private IJSRuntime JsRuntime { get; set; } = default!;
+
+    private ElementReference _answerRegionRef;
+    private bool _shouldFocusAnswer;
+    private IJSObjectReference? _interopModule;
+
+    private string CurrentPageTitle => _activeView switch
+    {
+        "study" or "cram-setup" => "Gennemgang | BjjSM",
+        "cards" when _editingCardId.HasValue => "Korteditor | BjjSM",
+        "cards" => "Kortoversigt | BjjSM",
+        "templates" => "Skabeloner | BjjSM",
+        _ => "Spaced Repetition | BjjSM"
+    };
 
     private readonly Guid _academyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
@@ -45,7 +59,7 @@ public partial class SpacedRepetitionPage : ComponentBase
     private bool _isAnswerRevealed;
     private bool _isCramSession;
     private bool _cramReschedule = false;
-    private string _cramTagFilter = "All";
+    private string _cramTagFilter = "Alle";
     private int _cramTierFilter = -1;
     private int _cramMaxCards = 25;
     private int _sessionCompletedCount;
@@ -56,7 +70,7 @@ public partial class SpacedRepetitionPage : ComponentBase
             : null;
 
     private string _browserSearch = string.Empty;
-    private string _browserTagFilter = "All";
+    private string _browserTagFilter = "Alle";
     private int _browserTierFilter = -1;
 
     private Guid? _editingCardId;
@@ -166,7 +180,7 @@ public partial class SpacedRepetitionPage : ComponentBase
         _activeDeckId = deckId;
         _activeView = "cards";
         _browserSearch = string.Empty;
-        _browserTagFilter = "All";
+        _browserTagFilter = "Alle";
         _browserTierFilter = -1;
         InitializeCardEditor(null);
     }
@@ -217,7 +231,7 @@ public partial class SpacedRepetitionPage : ComponentBase
     private void OpenCramBuilder(Guid deckId)
     {
         _activeDeckId = deckId;
-        _cramTagFilter = "All";
+        _cramTagFilter = "Alle";
         _cramTierFilter = -1;
         _cramMaxCards = 25;
         _cramReschedule = false;
@@ -232,7 +246,7 @@ public partial class SpacedRepetitionPage : ComponentBase
         if (deck is null) return;
 
         var query = deck.Cards.Where(c => c.State != 4);
-        if (_cramTagFilter != "All")
+        if (_cramTagFilter != "Alle")
         {
             query = query.Where(c => c.Tags.Any(t => string.Equals(t, _cramTagFilter, StringComparison.OrdinalIgnoreCase)));
         }
@@ -257,6 +271,52 @@ public partial class SpacedRepetitionPage : ComponentBase
     private void RevealAnswer()
     {
         _isAnswerRevealed = true;
+        _shouldFocusAnswer = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_shouldFocusAnswer && _isAnswerRevealed)
+        {
+            _shouldFocusAnswer = false;
+            try
+            {
+                _interopModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/app-interop.js");
+                await _interopModule.InvokeVoidAsync("focusElement", _answerRegionRef);
+            }
+            catch (JSException)
+            {
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            catch (TaskCanceledException)
+            {
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interopModule is not null)
+        {
+            try
+            {
+                await _interopModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            catch (TaskCanceledException)
+            {
+            }
+        }
     }
 
     private async Task RateCurrentCardAsync(int rating)
@@ -301,8 +361,8 @@ public partial class SpacedRepetitionPage : ComponentBase
 
     private IEnumerable<string> GetDeckTags(StudyDeckDto? deck)
     {
-        if (deck is null) return ["All"];
-        return new[] { "All" }.Concat(
+        if (deck is null) return ["Alle"];
+        return new[] { "Alle" }.Concat(
             deck.Cards
                 .SelectMany(c => c.Tags)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -326,7 +386,7 @@ public partial class SpacedRepetitionPage : ComponentBase
                     c.Tags.Any(t => t.Contains(term, StringComparison.OrdinalIgnoreCase)));
             }
 
-            if (_browserTagFilter != "All")
+            if (_browserTagFilter != "Alle")
             {
                 query = query.Where(c => c.Tags.Any(t => string.Equals(t, _browserTagFilter, StringComparison.OrdinalIgnoreCase)));
             }
@@ -422,7 +482,7 @@ public partial class SpacedRepetitionPage : ComponentBase
         if (file is null) return;
 
         _isUploadingMedia = true;
-        _mediaUploadMessage = $"Uploading {file.Name}...";
+        _mediaUploadMessage = $"Uploader {file.Name}...";
         try
         {
             var uploaded = await MediaApi.UploadMediaAsync(file);
@@ -431,16 +491,16 @@ public partial class SpacedRepetitionPage : ComponentBase
                 var times = _fieldTimestampInputs.TryGetValue(field.FieldDefinitionId, out var t) ? t : (null, null);
                 field.Value = MediaUrlParser.BuildUrlWithTimestamps(uploaded.RelativeUrl, times.Start, times.End);
                 _serverMediaFiles = await MediaApi.GetMediaFilesAsync();
-                _mediaUploadMessage = $"Uploaded {file.Name} successfully.";
+                _mediaUploadMessage = $"{file.Name} blev uploadet.";
             }
             else
             {
-                _mediaUploadMessage = "Upload failed. Check file size (max 100MB) and format (.mp4, .webm, .gif).";
+                _mediaUploadMessage = "Upload fejlede. Tjek filstørrelse (maks. 100 MB) og format (.mp4, .webm, .gif).";
             }
         }
         catch (Exception ex)
         {
-            _mediaUploadMessage = $"Upload error: {ex.Message}";
+            _mediaUploadMessage = $"Uploadfejl: {ex.Message}";
         }
         finally
         {
@@ -489,7 +549,7 @@ public partial class SpacedRepetitionPage : ComponentBase
 
             await LoadOverviewAsync();
             InitializeCardEditor(null);
-            _successMessage = "Flashcard saved.";
+            _successMessage = "Kort gemt.";
         }
         finally
         {
@@ -518,7 +578,7 @@ public partial class SpacedRepetitionPage : ComponentBase
             {
                 InitializeCardEditor(null);
             }
-            _successMessage = "Flashcard removed.";
+            _successMessage = "Kort slettet.";
         }
         finally
         {
@@ -543,7 +603,15 @@ public partial class SpacedRepetitionPage : ComponentBase
             }
 
             await LoadOverviewAsync();
-            _successMessage = $"Card lifecycle updated ({action}).";
+            var actionLabel = action switch
+            {
+                "suspend" => "sat på pause",
+                "unsuspend" => "genoptaget",
+                "reset" => "nulstillet",
+                "reschedule" => "udskudt",
+                _ => action
+            };
+            _successMessage = $"Kortstatus opdateret ({actionLabel}).";
         }
         finally
         {
@@ -639,7 +707,7 @@ public partial class SpacedRepetitionPage : ComponentBase
             _showDeckModal = false;
             _activeDeckId = res.Value.Id;
             await LoadOverviewAsync();
-            _successMessage = $"Deck '{res.Value.Name}' saved.";
+            _successMessage = $"Sættet '{res.Value.Name}' blev gemt.";
         }
         finally
         {
@@ -665,7 +733,7 @@ public partial class SpacedRepetitionPage : ComponentBase
                 _activeDeckId = null;
             }
             await LoadOverviewAsync();
-            _successMessage = "Deck deleted.";
+            _successMessage = "Sæt slettet.";
         }
         finally
         {
@@ -680,8 +748,8 @@ public partial class SpacedRepetitionPage : ComponentBase
         _templateDescription = string.Empty;
         _templateFields =
         [
-            new EditableTemplateField { Name = "Position / Prompt", Side = 1, FieldType = 1, IsRequired = true, SortOrder = 1 },
-            new EditableTemplateField { Name = "Counter / Details", Side = 2, FieldType = 2, IsRequired = true, SortOrder = 2 }
+            new EditableTemplateField { Name = "Position / Spørgsmål", Side = 1, FieldType = 1, IsRequired = true, SortOrder = 1 },
+            new EditableTemplateField { Name = "Modtræk / Detaljer", Side = 2, FieldType = 2, IsRequired = true, SortOrder = 2 }
         ];
     }
 
@@ -709,7 +777,7 @@ public partial class SpacedRepetitionPage : ComponentBase
         var nextOrder = _templateFields.Count > 0 ? _templateFields.Max(f => f.SortOrder) + 1 : 1;
         _templateFields.Add(new EditableTemplateField
         {
-            Name = side == 1 ? "Front Field" : "Back Field",
+            Name = side == 1 ? "Forsidefelt" : "Bagsidefelt",
             Side = side,
             FieldType = 1,
             IsRequired = false,
@@ -749,7 +817,7 @@ public partial class SpacedRepetitionPage : ComponentBase
 
             await LoadOverviewAsync();
             SelectTemplateForEdit(res.Value);
-            _successMessage = $"Template '{res.Value.Name}' saved.";
+            _successMessage = $"Skabelonen '{res.Value.Name}' blev gemt.";
         }
         finally
         {
@@ -779,7 +847,7 @@ public partial class SpacedRepetitionPage : ComponentBase
             {
                 StartNewTemplate();
             }
-            _successMessage = "Template deleted.";
+            _successMessage = "Skabelon slettet.";
         }
         finally
         {
@@ -797,7 +865,7 @@ public partial class SpacedRepetitionPage : ComponentBase
             return;
         }
 
-        _jsonModalTitle = $"Export Deck JSON ({deck.Name})";
+        _jsonModalTitle = $"Eksporter sæt som JSON ({deck.Name})";
         _jsonPayload = res.Value;
         _isImportMode = false;
         _showJsonModal = true;
@@ -805,7 +873,7 @@ public partial class SpacedRepetitionPage : ComponentBase
 
     private void OpenImportJsonModal()
     {
-        _jsonModalTitle = "Import Deck JSON Package";
+        _jsonModalTitle = "Importer sætpakke (JSON)";
         _jsonPayload = string.Empty;
         _isImportMode = true;
         _showJsonModal = true;
@@ -828,7 +896,7 @@ public partial class SpacedRepetitionPage : ComponentBase
             _showJsonModal = false;
             _activeDeckId = res.Value.Id;
             await LoadOverviewAsync();
-            _successMessage = $"Imported deck '{res.Value.Name}' with {res.Value.TotalCards} cards.";
+            _successMessage = $"Importerede sættet '{res.Value.Name}' med {res.Value.TotalCards} kort.";
         }
         finally
         {
@@ -838,12 +906,12 @@ public partial class SpacedRepetitionPage : ComponentBase
 
     private static string GetMaturityLabel(int tier) => tier switch
     {
-        0 => "New",
-        1 => "Learning",
-        2 => "Young (<21d)",
-        3 => "Mature (21d+)",
-        4 => "Suspended",
-        _ => "New"
+        0 => "Ny",
+        1 => "Under indlæring",
+        2 => "Ung (<21d)",
+        3 => "Moden (21d+)",
+        4 => "Sat på pause",
+        _ => "Ny"
     };
 
     private static string GetMaturityBadgeStyle(int tier) => tier switch
@@ -863,7 +931,7 @@ public partial class SpacedRepetitionPage : ComponentBase
             .OrderBy(v => v.SortOrder)
             .FirstOrDefault();
 
-        return firstFront?.Value ?? "(Empty Front)";
+        return firstFront?.Value ?? "(Tom forside)";
     }
 
     private static string GetPrimaryBackPreview(FlashcardDto card)
@@ -873,22 +941,30 @@ public partial class SpacedRepetitionPage : ComponentBase
             .OrderBy(v => v.SortOrder)
             .FirstOrDefault();
 
-        return firstBack?.Value ?? "(Empty Back)";
+        return firstBack?.Value ?? "(Tom bagside)";
     }
 
     private static string GetCardTitle(FlashcardDto? card)
     {
-        if (card is null) return "BJJ Technique";
+        if (card is null) return "BJJ-teknik";
         return GetPrimaryPromptPreview(card);
     }
 
-    private async Task ResetStarterDecksAsync()
+    private bool _showResetStarterDecksConfirm;
+
+    private void RequestResetStarterDecks()
     {
-        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm",
-            new object[] { "Reset starter decks to default factory presets? This will reinstate all 8 technique GIFs and reset starter card intervals. Custom decks will not be affected." });
+        _showResetStarterDecksConfirm = true;
+    }
 
-        if (!confirmed) return;
+    private void CancelResetStarterDecks()
+    {
+        _showResetStarterDecksConfirm = false;
+    }
 
+    private async Task ConfirmResetStarterDecksAsync()
+    {
+        _showResetStarterDecksConfirm = false;
         _isSaving = true;
         _errorMessage = null;
         _successMessage = null;
@@ -898,7 +974,7 @@ public partial class SpacedRepetitionPage : ComponentBase
             if (result.IsSuccess)
             {
                 _overview = result.Value;
-                _successMessage = "Starter decks successfully restored to factory presets.";
+                _successMessage = "Startsæt blev gendannet til standardindstillinger.";
             }
             else
             {
@@ -907,7 +983,7 @@ public partial class SpacedRepetitionPage : ComponentBase
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Failed to reset starter decks: {ex.Message}";
+            _errorMessage = $"Kunne ikke nulstille startsæt: {ex.Message}";
         }
         finally
         {

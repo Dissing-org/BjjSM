@@ -48,7 +48,7 @@ public partial class FlowchartsPage : ComponentBase
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Failed to load flowcharts: {ex.Message}";
+            _errorMessage = $"Kunne ikke indlæse flowcharts: {ex.Message}";
         }
         finally
         {
@@ -75,8 +75,8 @@ public partial class FlowchartsPage : ComponentBase
         _createModalError = null;
         var title = string.IsNullOrWhiteSpace(_newTitle)
             ? (!string.IsNullOrWhiteSpace(_selectedPresetKey)
-                ? _presets.FirstOrDefault(p => p.Key == _selectedPresetKey)?.Title ?? "New Game Plan"
-                : "New Game Plan")
+                ? _presets.FirstOrDefault(p => p.Key == _selectedPresetKey)?.Title ?? "Ny kampplan"
+                : "Ny kampplan")
             : _newTitle.Trim();
 
         _isCreating = true;
@@ -118,7 +118,7 @@ public partial class FlowchartsPage : ComponentBase
         }
         else
         {
-            _errorMessage = $"Could not delete flowchart: {result.Error}";
+            _errorMessage = $"Kunne ikke slette flowchart: {result.Error}";
         }
     }
 }

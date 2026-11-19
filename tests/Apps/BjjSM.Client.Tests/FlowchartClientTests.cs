@@ -1,7 +1,10 @@
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using BjjSM.Client.Models;
 using BjjSM.Client.Pages;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using Xunit;
 
 namespace BjjSM.Client.Tests;
@@ -58,6 +61,54 @@ public class FlowchartClientTests
         public void TriggerNodePointerDown(FlowchartNodeDto node, PointerEventArgs e) => OnNodePointerDown(node, e);
         public void TriggerNodeClick(FlowchartNodeDto node) => HandleNodeClick(node);
         public void TriggerSelectEdge(FlowchartEdgeDto edge) => SelectEdge(edge);
+        public Task TriggerExportSvgAsync() => ExportSvgAsync();
+        public string TestBuildSvgMarkup() => BuildSvgMarkup();
+        public static bool TestValidateImportedRequest(UpdateFlowchartRequest req, out string? error) => ValidateImportedRequest(req, out error);
+    }
+
+    private sealed class RecordingJsObjectReference : IJSObjectReference
+    {
+        public List<(string Identifier, object?[]? Args)> Invocations { get; } = [];
+        public string? CapturedStreamContent { get; private set; }
+        public bool IsDisposed { get; private set; }
+
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
+            => InvokeAsync<TValue>(identifier, CancellationToken.None, args);
+
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken, object?[]? args)
+        {
+            Invocations.Add((identifier, args));
+            if (args is { Length: >= 2 } && args[1] is DotNetStreamReference streamRef)
+            {
+                using var reader = new StreamReader(streamRef.Stream, Encoding.UTF8, leaveOpen: true);
+                CapturedStreamContent = reader.ReadToEnd();
+            }
+            return ValueTask.FromResult(default(TValue)!);
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            IsDisposed = true;
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class RecordingJsRuntime(RecordingJsObjectReference module) : IJSRuntime
+    {
+        public List<(string Identifier, object?[]? Args)> Invocations { get; } = [];
+
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
+            => InvokeAsync<TValue>(identifier, CancellationToken.None, args);
+
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken, object?[]? args)
+        {
+            Invocations.Add((identifier, args));
+            if (identifier == "import" && typeof(TValue) == typeof(IJSObjectReference))
+            {
+                return ValueTask.FromResult((TValue)(object)module);
+            }
+            return ValueTask.FromResult(default(TValue)!);
+        }
     }
 
     [Fact]
@@ -244,5 +295,67 @@ public class FlowchartClientTests
         editor.TriggerSelectEdge(edge);
 
         Assert.Null(editor.SelectedEdge);
+    }
+
+    [Fact]
+    public async Task ExportSvgAsync_UnderDaDkCulture_ShouldUseInvariantDotDecimalsAndStreamDownload()
+    {
+        var originalCulture = CultureInfo.CurrentCulture;
+        var originalUiCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            var daDk = new CultureInfo("da-DK");
+            CultureInfo.CurrentCulture = daDk;
+            CultureInfo.CurrentUICulture = daDk;
+
+            var module = new RecordingJsObjectReference();
+            var js = new RecordingJsRuntime(module);
+            var editor = new TestableFlowchartEditor { JS = js };
+
+            var flowchartId = Guid.NewGuid();
+            var nodeA = new FlowchartNodeDto(Guid.NewGuid(), flowchartId, "Guard", 2, null, 100.5, 200.25, 160.5, 80.5);
+            var nodeB = new FlowchartNodeDto(Guid.NewGuid(), flowchartId, "Mount", 1, null, 400.25, 200.25, 160.5, 80.5);
+            var edge = new FlowchartEdgeDto(Guid.NewGuid(), flowchartId, nodeA.Id, nodeB.Id, "Sweep", 1, null, 15);
+
+            editor.SetNodes([nodeA, nodeB]);
+            editor.SetEdges([edge]);
+
+            await editor.TriggerExportSvgAsync();
+
+            Assert.Contains(js.Invocations, i => i.Identifier == "import" && i.Args is ["./js/app-interop.js"]);
+            Assert.DoesNotContain(js.Invocations, i => i.Identifier == "downloadFileFromBase64");
+            Assert.Contains(module.Invocations, i => i.Identifier == "downloadFileFromStream");
+
+            var svg = module.CapturedStreamContent;
+            Assert.NotNull(svg);
+            Assert.Contains("translate(100.5, 200.25)", svg);
+            Assert.Contains("width=\"160.5\" height=\"80.5\"", svg);
+            Assert.DoesNotContain("translate(100,5", svg);
+            Assert.DoesNotContain("width=\"160,5\"", svg);
+
+            await editor.DisposeAsync();
+            Assert.True(module.IsDisposed);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
+    }
+
+    [Theory]
+    [InlineData(double.NaN, 10, 160, 80)]
+    [InlineData(10, double.PositiveInfinity, 160, 80)]
+    [InlineData(10, 20, 0, 80)]
+    [InlineData(10, 20, 160, -5)]
+    public void ValidateImportedRequest_InvalidNodeGeometry_ReturnsFalse(double x, double y, double width, double height)
+    {
+        var node = new FlowchartNodeDto(Guid.NewGuid(), Guid.NewGuid(), "Bad", 1, null, x, y, width, height);
+        var req = new UpdateFlowchartRequest("Title", null, [node], []);
+
+        var valid = TestableFlowchartEditor.TestValidateImportedRequest(req, out var error);
+
+        Assert.False(valid);
+        Assert.NotNull(error);
     }
 }

@@ -1,62 +1,137 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
 <div class="top-row ps-3 navbar navbar-dark academy-header">
     <div class="container-fluid d-flex align-items-center">
         <a class="navbar-brand d-flex align-items-center gap-2" href="">
-            <span class="brand-mon-crest">🥋</span>
+            <span class="brand-mon-crest" aria-hidden="true">🥋</span>
             <span class="brand-title">BJJ STUDIO</span>
         </a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
+        <button type="button"
+                class="navbar-toggler"
+                aria-label="Skift navigation"
+                aria-expanded="@(!collapseNavMenu)"
+                aria-controls="primary-nav"
+                @onclick="ToggleNavMenuAsync"
+                @onkeydown="HandleKeyDownAsync">
+            <span class="navbar-toggler-icon" aria-hidden="true"></span>
         </button>
     </div>
 </div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column py-2">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="nav-icon">⛩️</span> Dashboard
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="members">
-                <span class="nav-icon">👥</span> Member Roster
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="curriculum">
-                <span class="nav-icon">📅</span> Curriculum Planner
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="annual-wheel">
-                <span class="nav-icon">🎡</span> Årshjul
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="talents">
-                <span class="nav-icon">⚡</span> Talent Tree
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="spaced-repetition">
-                <span class="nav-icon">🧠</span> Spaced Repetition
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="flowcharts">
-                <span class="nav-icon">🗺️</span> Flowcharts
-            </NavLink>
-        </div>
+<div class="@NavMenuCssClass nav-scrollable" @onkeydown="HandleKeyDownAsync">
+    <nav id="primary-nav" aria-label="Primær navigation">
+        <ul class="nav flex-column py-2">
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="CloseNavMenuAsync">
+                    <span class="nav-icon" aria-hidden="true">⛩️</span> Hjem
+                </NavLink>
+            </li>
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="members" @onclick="CloseNavMenuAsync">
+                    <span class="nav-icon" aria-hidden="true">👥</span> Medlemmer
+                </NavLink>
+            </li>
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="curriculum" @onclick="CloseNavMenuAsync">
+                    <span class="nav-icon" aria-hidden="true">📅</span> Læseplan
+                </NavLink>
+            </li>
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="annual-wheel" @onclick="CloseNavMenuAsync">
+                    <span class="nav-icon" aria-hidden="true">🎡</span> Årshjul
+                </NavLink>
+            </li>
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="spaced-repetition" @onclick="CloseNavMenuAsync">
+                    <span class="nav-icon" aria-hidden="true">🧠</span> Spaced Repetition
+                </NavLink>
+            </li>
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="talents" @onclick="CloseNavMenuAsync">
+                    <span class="nav-icon" aria-hidden="true">⚡</span> Talenter
+                </NavLink>
+            </li>
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="flowcharts" @onclick="CloseNavMenuAsync">
+                    <span class="nav-icon" aria-hidden="true">🗺️</span> Flowcharts
+                </NavLink>
+            </li>
+        </ul>
     </nav>
 </div>
 
 @code {
     private bool collapseNavMenu = true;
+    private IJSObjectReference? _interopModule;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
-    private void ToggleNavMenu()
+    private async Task ToggleNavMenuAsync()
     {
         collapseNavMenu = !collapseNavMenu;
+        await SetMainContentInertAsync(!collapseNavMenu);
+    }
+
+    private async Task CloseNavMenuAsync()
+    {
+        if (!collapseNavMenu)
+        {
+            collapseNavMenu = true;
+            await SetMainContentInertAsync(false);
+        }
+    }
+
+    private async Task HandleKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !collapseNavMenu)
+        {
+            await CloseNavMenuAsync();
+        }
+    }
+
+    private async Task SetMainContentInertAsync(bool isInert)
+    {
+        try
+        {
+            _interopModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/app-interop.js");
+            await _interopModule.InvokeVoidAsync("setElementInert", "#main-content", isInert);
+        }
+        catch (JSException)
+        {
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interopModule is not null)
+        {
+            if (!collapseNavMenu)
+            {
+                await SetMainContentInertAsync(false);
+            }
+
+            try
+            {
+                await _interopModule.DisposeAsync();
+            }
+            catch (JSException)
+            {
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            _interopModule = null;
+        }
     }
 }

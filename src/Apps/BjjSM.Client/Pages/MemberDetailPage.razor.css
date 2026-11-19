@@ -1,0 +1,13 @@
+.avatar-circle-lg {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: #20409A;
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #FFEE00;
+}

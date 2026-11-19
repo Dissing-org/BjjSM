@@ -1,0 +1,37 @@
+.wow-talent-slot-wrapper {
+    position: relative;
+    width: 68px;
+    height: 68px;
+}
+
+.wow-talent-slot {
+    padding: 0;
+}
+
+.wow-row:focus-within {
+    z-index: 50;
+}
+
+.wow-talent-container:focus-within {
+    z-index: 100;
+}
+
+.wow-talent-container:hover .wow-tooltip,
+.wow-talent-container:focus-within .wow-tooltip {
+    display: block;
+    pointer-events: auto;
+}
+
+.wow-talent-slot-wrapper:hover .wow-talent-edit-btn,
+.wow-talent-slot-wrapper:focus-within .wow-talent-edit-btn,
+.wow-talent-slot-wrapper:hover .wow-talent-video-btn,
+.wow-talent-slot-wrapper:focus-within .wow-talent-video-btn {
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    .wow-talent-slot-wrapper {
+        width: 60px;
+        height: 60px;
+    }
+}

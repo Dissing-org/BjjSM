@@ -2,48 +2,55 @@
 @inject IMemberApiClient MemberApi
 @inject NavigationManager Nav
 
-<PageTitle>BjjSM - Member Roster</PageTitle>
+<PageTitle>Medlemmer | BjjSM</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h1 class="h2 fw-bold text-dark m-0">🥋 Practitioner Roster</h1>
-        <p class="text-muted m-0">Manage students, instructors, and belt rank progressions</p>
+        <h1 class="h2 fw-bold text-dark m-0"><span aria-hidden="true">🥋</span> Medlemsoversigt</h1>
+        <p class="text-muted m-0">Administrer elever, instruktører og bæltegradueringer</p>
     </div>
     <div>
-        <button class="btn btn-brand-primary d-flex align-items-center gap-2" @onclick="() => _showCreateModal = true">
-            <span>+</span> Register Practitioner
+        <button type="button" class="btn btn-brand-primary d-flex align-items-center gap-2" @onclick="() => _showCreateModal = true">
+            <span aria-hidden="true">+</span> Registrer medlem
         </button>
     </div>
 </div>
 
 <!-- Search & Belt Filter Toolbar -->
-<div class="card border-0 shadow-sm mb-4" style="background-color: #FFFFFF; border-radius: 8px;">
+<search class="card border-0 shadow-sm mb-4" style="background-color: #FFFFFF; border-radius: 8px;" aria-label="Søg og filtrer medlemmer">
     <div class="card-body p-3">
         <div class="row g-3 align-items-center">
             <div class="col-md-7">
+                <label for="members-search" class="visually-hidden">Søg efter medlemmer på navn eller e-mail</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0">🔍</span>
-                    <input type="text" class="form-control border-start-0 ps-0" placeholder="Search practitioners by name or email..." @bind="_searchTerm" @bind:event="oninput" />
+                    <span class="input-group-text bg-light border-end-0" aria-hidden="true">🔍</span>
+                    <input id="members-search" type="search" class="form-control border-start-0 ps-0" placeholder="Søg efter medlemmer på navn eller e-mail..." @bind="_searchTerm" @bind:event="oninput" />
                 </div>
             </div>
             <div class="col-md-5 d-flex gap-2">
-                <select class="form-select" @bind="_filterBelt">
-                    <option value="">All Belt Ranks</option>
-                    <option value="White">White Belts</option>
-                    <option value="Blue">Blue Belts</option>
-                    <option value="Purple">Purple Belts</option>
-                    <option value="Brown">Brown Belts</option>
-                    <option value="Black">Black Belts</option>
-                </select>
-                <select class="form-select" @bind="_filterRole">
-                    <option value="">All Roles</option>
-                    <option value="Student">Students</option>
-                    <option value="Instructor">Instructors</option>
-                </select>
+                <div class="flex-fill">
+                    <label for="members-belt-filter" class="visually-hidden">Filtrer efter bælte</label>
+                    <select id="members-belt-filter" class="form-select" @bind="_filterBelt">
+                        <option value="">Alle bælter</option>
+                        <option value="White">Hvidt bælte</option>
+                        <option value="Blue">Blåt bælte</option>
+                        <option value="Purple">Lilla bælte</option>
+                        <option value="Brown">Brunt bælte</option>
+                        <option value="Black">Sort bælte</option>
+                    </select>
+                </div>
+                <div class="flex-fill">
+                    <label for="members-role-filter" class="visually-hidden">Filtrer efter rolle</label>
+                    <select id="members-role-filter" class="form-select" @bind="_filterRole">
+                        <option value="">Alle roller</option>
+                        <option value="Student">Elever</option>
+                        <option value="Instructor">Instruktører</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</search>
 
 <!-- Members Table -->
 @if (!string.IsNullOrEmpty(_loadError))
@@ -51,11 +58,11 @@
     <div class="card border-0 shadow-sm p-4 bg-white mb-4" style="border-left: 6px solid #DC2626 !important; border-radius: 8px;">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h5 class="fw-bold text-danger m-0">⚠️ Academy Roster Unavailable</h5>
+                <h2 class="h5 fw-bold text-danger m-0"><span aria-hidden="true">⚠️</span> Medlemsoversigten er utilgængelig</h2>
                 <p class="text-muted m-0 mt-1 small">@_loadError</p>
             </div>
-            <button class="btn btn-brand-primary btn-sm d-flex align-items-center gap-1" @onclick="LoadMembersAsync">
-                <span>🔄</span> Retry
+            <button type="button" class="btn btn-brand-primary btn-sm d-flex align-items-center gap-1" @onclick="LoadMembersAsync">
+                <span aria-hidden="true">🔄</span> Prøv igen
             </button>
         </div>
     </div>
@@ -63,21 +70,21 @@
 else if (_isLoading)
 {
     <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status" style="color: var(--brand-blue) !important;">
-            <span class="visually-hidden">Loading practitioners...</span>
+        <div class="spinner-border text-primary" role="progressbar" aria-label="Indlæser medlemmer" style="color: var(--brand-blue) !important;">
+            <span class="visually-hidden">Indlæser medlemmer...</span>
         </div>
-        <p class="text-muted mt-2">Loading academy roster...</p>
+        <p class="text-muted mt-2">Indlæser medlemsoversigt...</p>
     </div>
 }
 else if (!FilteredMembers.Any())
 {
     <div class="card border-0 shadow-sm text-center py-5 bg-white">
         <div class="card-body">
-            <div style="font-size: 3rem;">🥋</div>
-            <h4 class="fw-bold mt-2">No practitioners found</h4>
-            <p class="text-muted">No students or instructors match your current search criteria.</p>
-            <button class="btn btn-brand-primary" @onclick="() => _showCreateModal = true">
-                Register First Practitioner
+            <div style="font-size: 3rem;" aria-hidden="true">🥋</div>
+            <h2 class="h4 fw-bold mt-2">Ingen medlemmer fundet</h2>
+            <p class="text-muted">Ingen elever eller instruktører matcher dine nuværende søgekriterier.</p>
+            <button type="button" class="btn btn-brand-primary" @onclick="() => _showCreateModal = true">
+                Registrer første medlem
             </button>
         </div>
     </div>
@@ -87,22 +94,23 @@ else
     <div class="card border-0 shadow-sm overflow-hidden bg-white">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
+                <caption class="visually-hidden">Medlemsoversigt</caption>
                 <thead style="background-color: #0B0F19; color: #FFFFFF;">
                     <tr>
-                        <th class="py-3 ps-3">Practitioner</th>
-                        <th class="py-3">Role</th>
-                        <th class="py-3">Current Belt & Stripes</th>
-                        <th class="py-3 text-center">Graduations</th>
-                        <th class="py-3 text-end pe-3">Actions</th>
+                        <th scope="col" class="py-3 ps-3">Medlem</th>
+                        <th scope="col" class="py-3">Rolle</th>
+                        <th scope="col" class="py-3">Nuværende bælte og striber</th>
+                        <th scope="col" class="py-3 text-center">Gradueringer</th>
+                        <th scope="col" class="py-3 text-end pe-3">Handlinger</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var member in FilteredMembers)
                     {
-                        <tr>
+                        <tr @key="member.Id">
                             <td class="ps-3">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="avatar-circle">
+                                    <div class="avatar-circle" aria-hidden="true">
                                         @member.FirstName[0]@member.LastName[0]
                                     </div>
                                     <div>
@@ -115,7 +123,7 @@ else
                             </td>
                             <td>
                                 <span class="badge @(member.Roles.HasFlag(PractitionerRole.Instructor) ? "bg-dark" : "bg-light text-dark border")">
-                                    @member.Roles
+                                    @FormatRoles(member.Roles)
                                 </span>
                             </td>
                             <td>
@@ -123,16 +131,22 @@ else
                             </td>
                             <td class="text-center">
                                 <span class="badge rounded-pill bg-light text-dark border px-2 py-1">
-                                    @(member.Graduations.Count) @(member.Graduations.Count == 1 ? "promotion" : "promotions")
+                                    @(member.Graduations.Count) @(member.Graduations.Count == 1 ? "graduering" : "gradueringer")
                                 </span>
                             </td>
                             <td class="text-end pe-3">
                                 <div class="d-flex justify-content-end gap-2">
-                                    <button class="btn btn-sm btn-brand-accent px-2 py-1" title="Promote" @onclick="() => OpenPromoteModal(member)">
-                                        🎓 Promote
+                                    <button type="button"
+                                            class="btn btn-sm btn-brand-accent px-2 py-1"
+                                            title="Forfrem"
+                                            aria-label="Forfrem @member.FirstName @member.LastName"
+                                            @onclick="() => OpenPromoteModal(member)">
+                                        <span aria-hidden="true">🎓</span> Forfrem
                                     </button>
-                                    <a href="members/@member.Id" class="btn btn-sm btn-outline-secondary px-2 py-1">
-                                        Profile
+                                    <a href="members/@member.Id"
+                                       class="btn btn-sm btn-outline-secondary px-2 py-1"
+                                       aria-label="Se profil for @member.FirstName @member.LastName">
+                                        Profil
                                     </a>
                                 </div>
                             </td>
@@ -152,26 +166,6 @@ else
     @bind-IsOpen="_showPromoteModal" 
     Member="_selectedMemberToPromote" 
     OnMemberPromoted="HandleMemberPromoted" />
-
-<style>
-    .avatar-circle {
-        width: 42px;
-        height: 42px;
-        border-radius: 50%;
-        background-color: #20409A;
-        color: #FFFFFF;
-        font-weight: 700;
-        font-size: 0.95rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #FFEE00;
-    }
-    .hover-blue:hover {
-        color: #20409A !important;
-        text-decoration: underline !important;
-    }
-</style>
 
 @code {
     private List<MemberDto> _members = [];
@@ -201,7 +195,7 @@ else
         }
         catch (Exception ex)
         {
-            _loadError = $"Unable to load members: {ex.Message}";
+            _loadError = $"Kunne ikke indlæse medlemmer: {ex.Message}";
         }
         finally
         {
@@ -232,6 +226,22 @@ else
 
         return true;
     });
+
+    private static string FormatRoles(PractitionerRole roles)
+    {
+        var labels = new List<string>();
+        if (roles.HasFlag(PractitionerRole.Instructor))
+        {
+            labels.Add("Instruktør");
+        }
+
+        if (roles.HasFlag(PractitionerRole.Student))
+        {
+            labels.Add("Elev");
+        }
+
+        return labels.Count > 0 ? string.Join(", ", labels) : roles.ToString();
+    }
 
     private void OpenPromoteModal(MemberDto member)
     {

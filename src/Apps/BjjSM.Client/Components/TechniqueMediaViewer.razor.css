@@ -36,38 +36,18 @@
     pointer-events: none;
 }
 
-.technique-lightbox-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(5, 5, 5, 0.85);
-    z-index: 1050;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-
-.technique-lightbox-dialog {
-    background-color: #050505;
-    border: 3px solid #FFEE00;
-    border-radius: 8px;
-    max-width: 760px;
-    width: 100%;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-}
-
-.technique-lightbox-header {
-    background-color: #20409A;
-    padding: 0.75rem 1rem;
-    border-bottom: 2px solid #FFEE00;
-}
-
 .technique-lightbox-img {
-    max-height: 60vh;
+    max-height: 60dvh;
     width: auto;
     margin: 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .technique-thumbnail-card {
+        transition: none;
+    }
+
+    .technique-thumbnail-card:hover {
+        transform: none;
+    }
 }
