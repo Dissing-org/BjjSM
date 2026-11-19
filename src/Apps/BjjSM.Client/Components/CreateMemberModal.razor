@@ -79,7 +79,7 @@
                     <label for="create-member-belt" class="form-label fw-bold text-dark small">Bæltegrad</label>
                     @if (_ladder == BeltLadder.Adult)
                     {
-                        <select id="create-member-belt" class="form-select" @bind="_adultBelt">
+                        <select id="create-member-belt" class="form-select" @bind="_adultBelt" @bind:after="OnBeltChanged">
                             @foreach (var belt in Enum.GetValues<AdultBelt>())
                             {
                                 <option value="@belt">@FormatAdultBelt(belt)</option>
@@ -88,7 +88,7 @@
                     }
                     else
                     {
-                        <select id="create-member-belt" class="form-select" @bind="_kidsBelt">
+                        <select id="create-member-belt" class="form-select" @bind="_kidsBelt" @bind:after="OnBeltChanged">
                             @foreach (var belt in Enum.GetValues<KidsBelt>())
                             {
                                 <option value="@belt">@belt bælte</option>
@@ -99,10 +99,15 @@
             </div>
 
             <div class="mb-3">
-                <label for="create-member-stripes" class="form-label fw-bold text-dark small">Striber / grader: @_stripes</label>
-                <input id="create-member-stripes" type="range" class="form-range" min="0" max="4" step="1" @bind="_stripes" />
+                <label for="create-member-stripes" class="form-label fw-bold text-dark small">
+                    @(_ladder == BeltLadder.Adult && (_adultBelt == AdultBelt.Black || _adultBelt == AdultBelt.Coral || _adultBelt == AdultBelt.Red) ? "Grader" : "Striber / grader"): @_stripes
+                </label>
+                <input id="create-member-stripes" type="range" class="form-range" min="@MinStripes" max="@MaxStripes" step="1" @bind="_stripes" />
                 <div class="d-flex justify-content-between text-muted small px-1">
-                    <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
+                    @for (int i = MinStripes; i <= MaxStripes; i++)
+                    {
+                        <span>@i</span>
+                    }
                 </div>
             </div>
         </form>
@@ -124,6 +129,8 @@
 </ModalDialog>
 
 @code {
+    private static readonly Guid DefaultAcademyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
     [Parameter] public EventCallback<MemberDto> OnMemberCreated { get; set; }
@@ -146,6 +153,21 @@
     private ElementReference _emailInput;
     private IJSObjectReference? _interopModule;
 
+    private int MinStripes => (_ladder, _adultBelt) switch
+    {
+        (BeltLadder.Adult, AdultBelt.Coral) => 7,
+        (BeltLadder.Adult, AdultBelt.Red) => 9,
+        _ => 0
+    };
+
+    private int MaxStripes => (_ladder, _adultBelt) switch
+    {
+        (BeltLadder.Adult, AdultBelt.Black) => 6,
+        (BeltLadder.Adult, AdultBelt.Coral) => 8,
+        (BeltLadder.Adult, AdultBelt.Red) => 10,
+        _ => 4
+    };
+
     private static string FormatAdultBelt(AdultBelt belt) => belt switch
     {
         AdultBelt.White => "Hvidt bælte",
@@ -162,7 +184,36 @@
     {
         _adultBelt = AdultBelt.White;
         _kidsBelt = KidsBelt.White;
+        ClampStripes();
+    }
+
+    private void OnBeltChanged()
+    {
+        ClampStripes();
+    }
+
+    private void ClampStripes()
+    {
+        var min = MinStripes;
+        var max = MaxStripes;
+        if (_stripes < min) _stripes = min;
+        if (_stripes > max) _stripes = max;
+    }
+
+    private void ResetForm()
+    {
+        _firstName = "";
+        _lastName = "";
+        _email = "";
+        _role = PractitionerRole.Student;
+        _ladder = BeltLadder.Adult;
+        _adultBelt = AdultBelt.White;
+        _kidsBelt = KidsBelt.White;
         _stripes = 0;
+        _errorMessage = null;
+        _firstNameHasError = false;
+        _lastNameHasError = false;
+        _emailHasError = false;
     }
 
     private async Task Close()
@@ -198,7 +249,7 @@
         try
         {
             var req = new CreateMemberRequest(
-                AcademyId: Guid.NewGuid(),
+                AcademyId: DefaultAcademyId,
                 FirstName: _firstName.Trim(),
                 LastName: _lastName.Trim(),
                 Email: _email.Trim(),
@@ -216,13 +267,13 @@
                 return;
             }
 
-            _firstName = "";
-            _lastName = "";
-            _email = "";
-            _stripes = 0;
-
+            ResetForm();
             await OnMemberCreated.InvokeAsync(result.Value);
             await Close();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
         }
         finally
         {

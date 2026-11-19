@@ -4,11 +4,11 @@ namespace BjjSM.Modules.Memberships.Domain;
 
 public sealed record Rank
 {
-    public BeltLadder Ladder { get; }
-    public string BeltName { get; }
-    public AdultBelt? Belt { get; }
-    public KidsBelt? KidsBelt { get; }
-    public int Stripes { get; }
+    public BeltLadder Ladder { get; private init; }
+    public string BeltName { get; private init; }
+    public AdultBelt? Belt { get; private init; }
+    public KidsBelt? KidsBelt { get; private init; }
+    public int Stripes { get; private init; }
 
     // Required by EF Core
     private Rank()

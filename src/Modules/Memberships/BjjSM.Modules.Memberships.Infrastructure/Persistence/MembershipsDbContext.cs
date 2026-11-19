@@ -27,6 +27,7 @@ public class PractitionerConfiguration : IEntityTypeConfiguration<Practitioner>
     {
         builder.ToTable("Practitioners");
         builder.HasKey(p => p.Id);
+        builder.Property(p => p.Id).ValueGeneratedNever();
 
         builder.Property(p => p.AcademyId).IsRequired();
         builder.Property(p => p.FirstName).HasMaxLength(100).IsRequired();
@@ -34,8 +35,8 @@ public class PractitionerConfiguration : IEntityTypeConfiguration<Practitioner>
         builder.Property(p => p.Email).HasMaxLength(255).IsRequired();
         builder.Property(p => p.Roles).IsRequired();
 
-        // Owned Value Object: InitialRank
-        builder.OwnsOne(p => p.InitialRank, rank =>
+        // Complex Type: InitialRank
+        builder.ComplexProperty(p => p.InitialRank, rank =>
         {
             rank.Property(r => r.Ladder).HasColumnName("InitialRank_Ladder").IsRequired();
             rank.Property(r => r.BeltName).HasColumnName("InitialRank_BeltName").HasMaxLength(50).IsRequired();
@@ -44,8 +45,8 @@ public class PractitionerConfiguration : IEntityTypeConfiguration<Practitioner>
             rank.Property(r => r.Stripes).HasColumnName("InitialRank_Stripes").IsRequired();
         });
 
-        // Owned Value Object: CurrentRank
-        builder.OwnsOne(p => p.CurrentRank, rank =>
+        // Complex Type: CurrentRank
+        builder.ComplexProperty(p => p.CurrentRank, rank =>
         {
             rank.Property(r => r.Ladder).HasColumnName("CurrentRank_Ladder").IsRequired();
             rank.Property(r => r.BeltName).HasColumnName("CurrentRank_BeltName").HasMaxLength(50).IsRequired();
@@ -58,6 +59,7 @@ public class PractitionerConfiguration : IEntityTypeConfiguration<Practitioner>
         builder.HasMany(p => p.Graduations)
             .WithOne()
             .HasForeignKey("PractitionerId")
+            .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.Graduations)
@@ -71,14 +73,17 @@ public class GraduationConfiguration : IEntityTypeConfiguration<Graduation>
     {
         builder.ToTable("Graduations");
         builder.HasKey(g => g.Id);
+        builder.Property(g => g.Id).ValueGeneratedNever();
+
+        builder.Property<Guid>("PractitionerId").IsRequired();
 
         builder.Property(g => g.AcademyId).IsRequired();
         builder.Property(g => g.AwardedAt).IsRequired();
         builder.Property(g => g.AwardedBy).IsRequired();
         builder.Property(g => g.Notes).HasMaxLength(1000);
 
-        // Owned Value Object: Rank
-        builder.OwnsOne(g => g.Rank, rank =>
+        // Complex Type: Rank
+        builder.ComplexProperty(g => g.Rank, rank =>
         {
             rank.Property(r => r.Ladder).HasColumnName("Rank_Ladder").IsRequired();
             rank.Property(r => r.BeltName).HasColumnName("Rank_BeltName").HasMaxLength(50).IsRequired();

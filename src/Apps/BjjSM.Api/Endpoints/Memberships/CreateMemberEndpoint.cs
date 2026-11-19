@@ -17,6 +17,8 @@ public record CreateMemberRequest(
 
 public sealed class CreateMemberEndpoint : Endpoint<CreateMemberRequest, MemberDto>
 {
+    public static readonly Guid DefaultAcademyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
     private readonly IPractitionerRepository _repository;
 
     public CreateMemberEndpoint(IPractitionerRepository repository)
@@ -44,7 +46,7 @@ public sealed class CreateMemberEndpoint : Endpoint<CreateMemberRequest, MemberD
         }
 
         var memberResult = Practitioner.Create(
-            req.AcademyId == Guid.Empty ? Guid.NewGuid() : req.AcademyId,
+            req.AcademyId == Guid.Empty ? DefaultAcademyId : req.AcademyId,
             req.FirstName,
             req.LastName,
             req.Email,
