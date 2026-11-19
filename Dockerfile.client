@@ -15,12 +15,17 @@ COPY src/Apps/BjjSM.Client/ src/Apps/BjjSM.Client/
 
 RUN dotnet publish src/Apps/BjjSM.Client/BjjSM.Client.csproj -c Release -o /app/publish
 
+COPY nginx.conf /app/nginx.conf
+RUN IMPORTMAP_HASH=$(perl -0777 -ne 'print $1 if m{<script type="importmap">(.*?)</script>}s' /app/publish/wwwroot/index.html | openssl dgst -sha256 -binary | openssl base64 -A) && \
+    test -n "$IMPORTMAP_HASH" && \
+    sed -i "s|__IMPORTMAP_SHA256__|sha256-${IMPORTMAP_HASH}|g" /app/nginx.conf
+
 FROM nginx:alpine AS runtime
 WORKDIR /usr/share/nginx/html
 
 RUN rm -rf ./*
 COPY --from=build /app/publish/wwwroot/ .
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
