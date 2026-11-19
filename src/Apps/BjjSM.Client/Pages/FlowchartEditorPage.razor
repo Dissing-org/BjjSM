@@ -128,18 +128,25 @@ else if (_flowchart is not null)
                 </defs>
 
                 <!-- Canvas transformation group -->
+                @{
+                    var edgeLayouts = FlowchartLayoutEngine.ComputeEdgeLayouts(_nodes, _edges);
+                }
                 <g transform="translate(@(_panX.ToString(CultureInfo.InvariantCulture)), @(_panY.ToString(CultureInfo.InvariantCulture))) scale(@(_zoom.ToString(CultureInfo.InvariantCulture)))">
 
-                    <!-- Render Edges (Arrows) -->
+                    <!-- Layer 1: Arrow Paths -->
                     @foreach (var edge in _edges)
                     {
-                        var (pathData, labelX, labelY) = CalculateEdgeGeometry(edge);
+                        if (!edgeLayouts.TryGetValue(edge.Id, out var edgeLayout) || string.IsNullOrEmpty(edgeLayout.PathData))
+                        {
+                            continue;
+                        }
+
                         var isSelected = _selectedEdge?.Id == edge.Id;
                         var isSubmission = edge.Type == 3;
                         var strokeColor = isSelected ? "#EF4444" : (isSubmission ? "#B38F00" : "#20409A");
                         var markerId = isSelected ? "url(#arrowhead-selected)" : (isSubmission ? "url(#arrowhead-gold)" : "url(#arrowhead)");
 
-                        <g @key="edge.Id"
+                        <g @key="@($"edge-path-{edge.Id}")"
                            class="flowchart-edge"
                            tabindex="0"
                            role="button"
@@ -150,36 +157,19 @@ else if (_flowchart is not null)
                            @onkeydown="(e) => HandleEdgeKeyDown(edge, e)"
                            @onkeydown:stopPropagation="true">
                             <!-- Background thick line for easy clicking & touch tapping -->
-                            <path d="@pathData" fill="none" stroke="transparent" stroke-width="32" pointer-events="stroke" />
+                            <path d="@edgeLayout.PathData" fill="none" stroke="transparent" stroke-width="32" pointer-events="stroke" />
 
                             <!-- Actual edge stroke -->
-                            <path d="@pathData"
+                            <path d="@edgeLayout.PathData"
                                   fill="none"
                                   stroke="@strokeColor"
                                   stroke-width="@(isSelected ? "3.5" : "2.5")"
                                   stroke-dasharray="@(edge.Type == 4 ? "4 4" : "none")"
                                   marker-end="@markerId" />
-
-                            <!-- Edge Action Label Pill -->
-                            <g transform="translate(@(labelX.ToString(CultureInfo.InvariantCulture)), @(labelY.ToString(CultureInfo.InvariantCulture)))">
-                                @{
-                                    var textLen = Math.Max(edge.Label.Length * 7.5, 50);
-                                    var pillWidth = textLen + 16;
-                                }
-                                <rect x="@((-pillWidth / 2).ToString(CultureInfo.InvariantCulture))" y="-12"
-                                      width="@(pillWidth.ToString(CultureInfo.InvariantCulture))" height="24" rx="12"
-                                      fill="@(isSelected ? "#FEE2E2" : (isSubmission ? "#FFFBEB" : "#FFFFFF"))"
-                                      stroke="@strokeColor"
-                                      stroke-width="1.5" />
-                                <text x="0" y="4" text-anchor="middle" font-size="11" font-weight="700"
-                                      fill="@(isSelected ? "#DC2626" : (isSubmission ? "#997A00" : "#050505"))">
-                                    @edge.Label
-                                </text>
-                            </g>
                         </g>
                     }
 
-                    <!-- Render Nodes (Positions) -->
+                    <!-- Layer 2: Position Nodes -->
                     @foreach (var node in _nodes)
                     {
                         var isSelected = _selectedNode?.Id == node.Id;
@@ -242,6 +232,57 @@ else if (_flowchart is not null)
                                 <circle cx="@((node.Width / 2).ToString(CultureInfo.InvariantCulture))" cy="@(node.Height.ToString(CultureInfo.InvariantCulture))"
                                         r="6" fill="#F59E0B" stroke="#FFFFFF" stroke-width="2" />
                             }
+                        </g>
+                    }
+
+                    <!-- Layer 3: Arrow Label Pills & Leader Lines (always above nodes) -->
+                    @foreach (var edge in _edges)
+                    {
+                        if (!edgeLayouts.TryGetValue(edge.Id, out var layout) || string.IsNullOrEmpty(layout.PathData))
+                        {
+                            continue;
+                        }
+
+                        var isSelected = _selectedEdge?.Id == edge.Id;
+                        var isSubmission = edge.Type == 3;
+                        var strokeColor = isSelected ? "#EF4444" : (isSubmission ? "#B38F00" : "#20409A");
+
+                        <g @key="@($"edge-label-{edge.Id}")"
+                           class="flowchart-edge-label"
+                           tabindex="0"
+                           role="button"
+                           aria-label="@($"Overgang: {edge.Label}")"
+                           style="cursor: pointer;"
+                           @onclick="() => SelectEdge(edge)"
+                           @onclick:stopPropagation="true"
+                           @onkeydown="(e) => HandleEdgeKeyDown(edge, e)"
+                           @onkeydown:stopPropagation="true">
+                            @if (layout.HasLeaderLine)
+                            {
+                                <line x1="@(layout.AnchorX.ToString("F1", CultureInfo.InvariantCulture))"
+                                      y1="@(layout.AnchorY.ToString("F1", CultureInfo.InvariantCulture))"
+                                      x2="@(layout.LabelX.ToString("F1", CultureInfo.InvariantCulture))"
+                                      y2="@(layout.LabelY.ToString("F1", CultureInfo.InvariantCulture))"
+                                      stroke="@strokeColor"
+                                      stroke-width="1"
+                                      stroke-dasharray="3 3"
+                                      opacity="0.65" />
+                            }
+
+                            <g transform="translate(@(layout.LabelX.ToString(CultureInfo.InvariantCulture)), @(layout.LabelY.ToString(CultureInfo.InvariantCulture)))">
+                                <rect x="@((-layout.PillWidth / 2).ToString(CultureInfo.InvariantCulture))"
+                                      y="@((-layout.PillHeight / 2).ToString(CultureInfo.InvariantCulture))"
+                                      width="@(layout.PillWidth.ToString(CultureInfo.InvariantCulture))"
+                                      height="@(layout.PillHeight.ToString(CultureInfo.InvariantCulture))"
+                                      rx="12"
+                                      fill="@(isSelected ? "#FEE2E2" : (isSubmission ? "#FFFBEB" : "#FFFFFF"))"
+                                      stroke="@strokeColor"
+                                      stroke-width="1.5" />
+                                <text x="0" y="4" text-anchor="middle" font-size="11" font-weight="700"
+                                      fill="@(isSelected ? "#DC2626" : (isSubmission ? "#997A00" : "#050505"))">
+                                    @edge.Label
+                                </text>
+                            </g>
                         </g>
                     }
                 </g>

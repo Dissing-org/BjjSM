@@ -486,6 +486,7 @@ public partial class FlowchartEditorPage : ComponentBase, IAsyncDisposable
 
     protected string BuildSvgMarkup()
     {
+        var edgeLayouts = FlowchartLayoutEngine.ComputeEdgeLayouts(_nodes, _edges);
         var svgBuilder = new StringBuilder();
         svgBuilder.AppendLine("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1200\" height=\"800\" viewBox=\"0 0 1200 800\" style=\"background-color: #F8FAFC; font-family: system-ui, -apple-system, sans-serif;\">");
         svgBuilder.AppendLine("  <defs>");
@@ -497,22 +498,23 @@ public partial class FlowchartEditorPage : ComponentBase, IAsyncDisposable
         svgBuilder.AppendLine("    </marker>");
         svgBuilder.AppendLine("  </defs>");
 
-        // Edges
+        // Layer 1: Arrow paths
         foreach (var edge in _edges)
         {
-            var (pathData, labelX, labelY) = CalculateEdgeGeometry(edge);
+            if (!edgeLayouts.TryGetValue(edge.Id, out var layout) || string.IsNullOrEmpty(layout.PathData))
+            {
+                continue;
+            }
+
             var isSub = edge.Type == 3;
             var stroke = isSub ? "#B38F00" : "#20409A";
             var marker = isSub ? "url(#arrowhead-gold)" : "url(#arrowhead)";
+            var dashAttr = edge.Type == 4 ? " stroke-dasharray=\"4 4\"" : string.Empty;
 
-            svgBuilder.AppendLine($"  <path d=\"{pathData}\" fill=\"none\" stroke=\"{stroke}\" stroke-width=\"2.5\" marker-end=\"{marker}\" />");
-            var textLen = Math.Max(edge.Label.Length * 7.5, 50);
-            var pillWidth = textLen + 16;
-            svgBuilder.AppendLine(FormattableString.Invariant($"  <rect x=\"{labelX - pillWidth / 2}\" y=\"{labelY - 12}\" width=\"{pillWidth}\" height=\"24\" rx=\"12\" fill=\"#FFFFFF\" stroke=\"{stroke}\" stroke-width=\"1.5\" />"));
-            svgBuilder.AppendLine(FormattableString.Invariant($"  <text x=\"{labelX}\" y=\"{labelY + 4}\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"bold\" fill=\"#050505\">{System.Net.WebUtility.HtmlEncode(edge.Label)}</text>"));
+            svgBuilder.AppendLine($"  <path d=\"{layout.PathData}\" fill=\"none\" stroke=\"{stroke}\" stroke-width=\"2.5\"{dashAttr} marker-end=\"{marker}\" />");
         }
 
-        // Nodes
+        // Layer 2: Position nodes
         foreach (var node in _nodes)
         {
             var isSub = node.Category == 4;
@@ -530,6 +532,31 @@ public partial class FlowchartEditorPage : ComponentBase, IAsyncDisposable
                 svgBuilder.AppendLine($"    <text x=\"10\" y=\"66\" font-size=\"10\" fill=\"#64748B\">{System.Net.WebUtility.HtmlEncode(node.Notes)}</text>");
             }
             svgBuilder.AppendLine("  </g>");
+        }
+
+        // Layer 3: Arrow label pills & leader lines (above nodes)
+        foreach (var edge in _edges)
+        {
+            if (!edgeLayouts.TryGetValue(edge.Id, out var layout) || string.IsNullOrEmpty(layout.PathData))
+            {
+                continue;
+            }
+
+            var isSub = edge.Type == 3;
+            var stroke = isSub ? "#B38F00" : "#20409A";
+            var pillFill = isSub ? "#FFFBEB" : "#FFFFFF";
+            var textFill = isSub ? "#997A00" : "#050505";
+
+            if (layout.HasLeaderLine)
+            {
+                svgBuilder.AppendLine(FormattableString.Invariant(
+                    $"  <line x1=\"{layout.AnchorX:F1}\" y1=\"{layout.AnchorY:F1}\" x2=\"{layout.LabelX:F1}\" y2=\"{layout.LabelY:F1}\" stroke=\"{stroke}\" stroke-width=\"1\" stroke-dasharray=\"3 3\" opacity=\"0.65\" />"));
+            }
+
+            svgBuilder.AppendLine(FormattableString.Invariant(
+                $"  <rect x=\"{layout.LabelX - layout.PillWidth / 2}\" y=\"{layout.LabelY - layout.PillHeight / 2}\" width=\"{layout.PillWidth}\" height=\"{layout.PillHeight}\" rx=\"12\" fill=\"{pillFill}\" stroke=\"{stroke}\" stroke-width=\"1.5\" />"));
+            svgBuilder.AppendLine(FormattableString.Invariant(
+                $"  <text x=\"{layout.LabelX}\" y=\"{layout.LabelY + 4}\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"bold\" fill=\"{textFill}\">{System.Net.WebUtility.HtmlEncode(edge.Label)}</text>"));
         }
 
         svgBuilder.AppendLine("</svg>");
@@ -573,74 +600,14 @@ public partial class FlowchartEditorPage : ComponentBase, IAsyncDisposable
     // Geometry Calculation
     protected (string PathData, double LabelX, double LabelY) CalculateEdgeGeometry(FlowchartEdgeDto edge)
     {
-        var src = _nodes.FirstOrDefault(n => n.Id == edge.SourceNodeId);
-        var tgt = _nodes.FirstOrDefault(n => n.Id == edge.TargetNodeId);
+        var edgesForLayout = _edges.Any(e => e.Id == edge.Id)
+            ? _edges
+            : [.. _edges, edge];
 
-        if (src is null || tgt is null)
-        {
-            return (string.Empty, 0, 0);
-        }
-
-        var srcCenterX = src.X + src.Width / 2;
-        var srcCenterY = src.Y + src.Height / 2;
-        var tgtCenterX = tgt.X + tgt.Width / 2;
-        var tgtCenterY = tgt.Y + tgt.Height / 2;
-
-        var dx = tgtCenterX - srcCenterX;
-        var dy = tgtCenterY - srcCenterY;
-
-        double startX, startY, endX, endY;
-
-        if (Math.Abs(dx) >= Math.Abs(dy))
-        {
-            if (dx >= 0)
-            {
-                startX = src.X + src.Width;
-                startY = srcCenterY;
-                endX = tgt.X;
-                endY = tgtCenterY;
-            }
-            else
-            {
-                startX = src.X;
-                startY = srcCenterY;
-                endX = tgt.X + tgt.Width;
-                endY = tgtCenterY;
-            }
-        }
-        else
-        {
-            if (dy >= 0)
-            {
-                startX = srcCenterX;
-                startY = src.Y + src.Height;
-                endX = tgtCenterX;
-                endY = tgt.Y;
-            }
-            else
-            {
-                startX = srcCenterX;
-                startY = src.Y;
-                endX = tgtCenterX;
-                endY = tgt.Y + tgt.Height;
-            }
-        }
-
-        var midX = (startX + endX) / 2;
-        var midY = (startY + endY) / 2;
-
-        var length = Math.Sqrt((endX - startX) * (endX - startX) + (endY - startY) * (endY - startY));
-        var normX = length > 0 ? -(endY - startY) / length : 0;
-        var normY = length > 0 ? (endX - startX) / length : 0;
-
-        var ctrlX = midX + normX * edge.CurveOffset;
-        var ctrlY = midY + normY * edge.CurveOffset;
-
-        var labelX = 0.25 * startX + 0.5 * ctrlX + 0.25 * endX;
-        var labelY = 0.25 * startY + 0.5 * ctrlY + 0.25 * endY;
-
-        var pathData = FormattableString.Invariant($"M {startX:F1} {startY:F1} Q {ctrlX:F1} {ctrlY:F1} {endX:F1} {endY:F1}");
-        return (pathData, labelX, labelY);
+        var layouts = FlowchartLayoutEngine.ComputeEdgeLayouts(_nodes, edgesForLayout);
+        return layouts.TryGetValue(edge.Id, out var layout)
+            ? (layout.PathData, layout.LabelX, layout.LabelY)
+            : (string.Empty, 0, 0);
     }
 
     protected static string GetCategoryDisplayName(int category) => category switch
